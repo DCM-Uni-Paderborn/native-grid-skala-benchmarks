@@ -17,6 +17,12 @@ CP2K interprets `LEBEDEV_GRID` as a requested minimum size and selects the small
 
 The production grid is the least expensive setting for which further tightening leaves the reaction or conformational energy, integrated particle number, force finite differences, and virial/stress finite differences unchanged within the reported tolerances. Total-energy convergence alone is insufficient.
 
+The first isolated-H2O series at 800 Ry demonstrates why the inherited 50/50 one-center grid is only a starting point. Relative to a 200/974 reference, the 50/50 grid changes the energy by -369.201 microhartree and integrates 0.0004486 excess electrons. The 100/434 and 100/590 grids reduce these residuals to 8.379 and 6.084 microhartree and to -3.031e-7 and -2.206e-7 electrons, respectively.
+
+The present native implementation uses an unpruned radial-times-Lebedev product. Nominal point counts therefore grow from 2,500 points per atom at 50/50 to 43,400 at 100/434 and 194,800 at 200/974. On the B200 H2O pilot, however, the complete wall-time factors were only 1.00, 1.20, and 1.83 because atom rows are processed in accelerator batches and the remaining CP2K work is unchanged. The 100/434 grid is the conservative candidate, 100/590 its tightening control, and 200/974 a numerical reference. The cheaper 100/302 grid is accepted only if paired ACONF energy differences and force and virial finite differences satisfy the same tolerances.
+
+The finer angular requirement is not specific to a one-center correction. Bonding, neighboring basis functions, and the smooth atom partition make the density anisotropic on each target-atom grid. Skala then uses density, density gradient, and positive kinetic-energy density in nonlinear nonlocal descriptors, so angular quadrature errors can propagate through descriptor couplings. Molecular GauXC hides much of the corresponding point-count burden through shell-dependent grid pruning. Equivalent pruning of the native grid is a performance optimization only if forward selection and analytical adjoints remain identical.
+
 The test is repeated for all-electron GAPW and pseudopotential `GAPW_XC` with `PAW_ONE_CENTER`. A direct-valence route is retained as a same-density reference. `GAPW_ACCURATE_XCINT` is enabled in production and a paired on/off control verifies that its classical smooth/soft switching weights do not define the atom-composite Skala field.
 
 ## Production gate
