@@ -9,9 +9,33 @@ cp2k_bin=${CP2K_BIN:-${cp2k_root}/install/cp2k-b200/bin/cp2k.psmp}
 data_dir=${CP2K_DATA_DIR:-${cp2k_root}/install/cp2k-b200/share/cp2k/data}
 cpu_model=${GAUXC_SKALA_MODEL:-${cp2k_root}/models/skala-1.1-rev1.fun}
 cuda_model=${GAUXC_SKALA_CUDA_MODEL:-${cp2k_root}/models/skala-1.1-rev1-cuda.fun}
-cpu_sets=(32-63 64-95 128-159 160-191)
 max_concurrent=${MAX_B200_JOBS:-3}
 min_headroom_bytes=${MIN_JOB_MEMORY_HEADROOM_BYTES:-130000000000}
+
+mapfile -t allowed_cpus < <(python3 - <<'PY'
+from pathlib import Path
+
+entry = next(
+    line for line in Path("/proc/self/status").read_text().splitlines()
+    if line.startswith("Cpus_allowed_list:")
+).split(":", 1)[1].strip()
+for part in entry.split(","):
+    bounds = [int(value) for value in part.split("-")]
+    start, stop = (bounds[0], bounds[-1])
+    for cpu in range(start, stop + 1):
+        print(cpu)
+PY
+)
+threads_per_case=$(( ${#allowed_cpus[@]} / 4 ))
+if ((threads_per_case < 1)); then
+  echo "Fewer than four CPUs are available" >&2
+  exit 1
+fi
+declare -a cpu_sets
+for slot in 0 1 2 3; do
+  offset=$((slot * threads_per_case))
+  cpu_sets[$slot]=$(IFS=,; echo "${allowed_cpus[*]:offset:threads_per_case}")
+done
 
 mapfile -t gpu_uuids < <(
   nvidia-smi --query-gpu=uuid --format=csv,noheader,nounits
@@ -34,7 +58,7 @@ run_is_active() {
 }
 
 mapfile -t queue < <(
-  find "${root}" -mindepth 1 -maxdepth 1 -type d | sort -V | while read -r run_dir; do
+  find "${root}" -type f -name input.inp -printf '%h\n' | sort -V | while read -r run_dir; do
     if { [[ ! -f "${run_dir}/output.out" ]] || \
       ! grep -q "SCF run converged" "${run_dir}/output.out"; } && \
       ! run_is_active "${run_dir}"; then
@@ -84,7 +108,7 @@ run_one() {
     export GAUXC_SKALA_MODEL="${cpu_model}"
     export GAUXC_SKALA_CUDA_MODEL="${cuda_model}"
     export CUDA_VISIBLE_DEVICES="${slot}"
-    export OMP_NUM_THREADS=32
+    export OMP_NUM_THREADS="${threads_per_case}"
     export OMP_PROC_BIND=false
     unset OMP_PLACES
     /usr/bin/time -v taskset -c "${cpu_sets[$slot]}" \

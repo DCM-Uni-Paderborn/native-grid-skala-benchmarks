@@ -36,10 +36,20 @@ def replace_once(text: str, pattern: str, replacement: str) -> str:
     return updated
 
 
-def common_transform(text: str, cutoff: int, project: str) -> str:
+def common_transform(
+    text: str, cutoff: int, radial: int, lebedev: int, project: str
+) -> str:
     text = replace_once(text, r"^      &SCF\n.*?^      &END SCF\n", SCF_BLOCK)
     text = replace_once(text, r"(?m)^(\s*CUTOFF\s+)\S+", rf"\g<1>{cutoff}.0")
     text = replace_once(text, r"(?m)^(\s*PROJECT_NAME\s+)\S+", rf"\g<1>{project}")
+    text, radial_count = re.subn(
+        r"(?m)^(\s*RADIAL_GRID\s+)\S+", rf"\g<1>{radial}", text
+    )
+    text, lebedev_count = re.subn(
+        r"(?m)^(\s*LEBEDEV_GRID\s+)\S+", rf"\g<1>{lebedev}", text
+    )
+    if radial_count == 0 or lebedev_count == 0:
+        raise ValueError("Native atom-grid settings are missing")
     return text
 
 
@@ -73,9 +83,8 @@ def convert_covered_kinds_to_ae(text: str) -> str:
 
 
 def write_case(destination: Path, digest: str, route: str, text: str) -> str:
-    route_dir = destination / route
-    route_dir.mkdir(parents=True, exist_ok=True)
-    relative = Path(route) / f"{digest}.inp"
+    relative = Path(route) / digest / "input.inp"
+    (destination / relative).parent.mkdir(parents=True, exist_ok=True)
     (destination / relative).write_text(text)
     return str(relative)
 
@@ -86,6 +95,8 @@ def main() -> None:
     parser.add_argument("destination", type=Path)
     parser.add_argument("--ae-cutoff", type=int, required=True)
     parser.add_argument("--gapwxc-cutoff", type=int, default=400)
+    parser.add_argument("--radial-grid", type=int, default=100)
+    parser.add_argument("--lebedev-grid", type=int, default=434)
     args = parser.parse_args()
 
     manifest = json.loads((args.source / "manifest.json").read_text())
@@ -94,6 +105,8 @@ def main() -> None:
             "shared_ae_cutoff_ry": args.ae_cutoff,
             "hybrid_cutoff_ry": args.ae_cutoff,
             "gapwxc_gth_cutoff_ry": args.gapwxc_cutoff,
+            "radial_grid": args.radial_grid,
+            "lebedev_grid": args.lebedev_grid,
             "eps_scf": 1.0e-7,
             "ot_stepsize": 0.10,
             "heavy_gth_elements": sorted(HEAVY_GTH_ELEMENTS),
@@ -108,7 +121,10 @@ def main() -> None:
 
         if not heavy:
             source = args.source / record["routes"]["gapw-ae"]
-            text = common_transform(source.read_text(), args.ae_cutoff, f"{digest[:12]}_gapw_ae")
+            text = common_transform(
+                source.read_text(), args.ae_cutoff, args.radial_grid,
+                args.lebedev_grid, f"{digest[:12]}_gapw_ae"
+            )
             text = text.replace("QZVPP-MOLOPT-PBE-ae", "TZVPP-MOLOPT-PBE-ae")
             routes["shared-gapw-ae"] = write_case(
                 args.destination, digest, "shared-gapw-ae", text
@@ -120,7 +136,10 @@ def main() -> None:
             ):
                 source = args.source / record["routes"][source_route]
                 text = convert_covered_kinds_to_ae(source.read_text())
-                text = common_transform(text, args.ae_cutoff, f"{digest[:12]}_{route.replace('-', '_')}")
+                text = common_transform(
+                    text, args.ae_cutoff, args.radial_grid, args.lebedev_grid,
+                    f"{digest[:12]}_{route.replace('-', '_')}"
+                )
                 text = set_qs_method(text, "GAPW")
                 if f"PSEUDOPOTENTIAL_GAPW_REPRESENTATION {representation}" not in text:
                     raise ValueError(f"Incorrect representation in {digest} {route}")
@@ -128,7 +147,8 @@ def main() -> None:
 
         source = args.source / record["routes"]["gapw-gth-paw"]
         text = common_transform(
-            source.read_text(), args.gapwxc_cutoff, f"{digest[:12]}_gapwxc_gth_paw"
+            source.read_text(), args.gapwxc_cutoff, args.radial_grid,
+            args.lebedev_grid, f"{digest[:12]}_gapwxc_gth_paw"
         )
         text = set_qs_method(text, "GAPW_XC")
         routes["gapwxc-gth-one-center"] = write_case(
