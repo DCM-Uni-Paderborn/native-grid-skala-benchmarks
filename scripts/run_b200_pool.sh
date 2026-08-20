@@ -10,6 +10,8 @@ data_dir=${CP2K_DATA_DIR:-${cp2k_root}/install/cp2k-b200/share/cp2k/data}
 cpu_model=${GAUXC_SKALA_MODEL:-${cp2k_root}/models/skala-1.1-rev1.fun}
 cuda_model=${GAUXC_SKALA_CUDA_MODEL:-${cp2k_root}/models/skala-1.1-rev1-cuda.fun}
 cpu_sets=(32-63 64-95 128-159 160-191)
+max_concurrent=${MAX_B200_JOBS:-3}
+min_headroom_bytes=${MIN_JOB_MEMORY_HEADROOM_BYTES:-130000000000}
 
 mapfile -t gpu_uuids < <(
   nvidia-smi --query-gpu=uuid --format=csv,noheader,nounits
@@ -19,13 +21,47 @@ if ((${#gpu_uuids[@]} != 4)); then
   exit 1
 fi
 
+run_is_active() {
+  local run_dir=$1
+  local pid
+  for pid in $(pgrep -u "${USER}" -f "${cp2k_bin}" || true); do
+    if [[ "$(readlink -f "/proc/${pid}/cwd" 2>/dev/null || true)" == \
+      "$(readlink -f "${run_dir}")" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 mapfile -t queue < <(
   find "${root}" -mindepth 1 -maxdepth 1 -type d | sort -V | while read -r run_dir; do
-    if [[ ! -f "${run_dir}/output.out" ]] || ! grep -q "SCF run converged" "${run_dir}/output.out"; then
+    if { [[ ! -f "${run_dir}/output.out" ]] || \
+      ! grep -q "SCF run converged" "${run_dir}/output.out"; } && \
+      ! run_is_active "${run_dir}"; then
       printf '%s\n' "${run_dir}"
     fi
   done
 )
+
+active_compute_count() {
+  nvidia-smi --query-compute-apps=pid --format=csv,noheader,nounits 2>/dev/null \
+    | sed '/^$/d' | wc -l
+}
+
+cgroup_memory_headroom() {
+  local path max current
+  path=$(cut -d: -f3 /proc/self/cgroup)
+  while [[ "${path}" != "/" ]]; do
+    max=$(cat "/sys/fs/cgroup${path}/memory.max" 2>/dev/null || echo max)
+    if [[ "${max}" != "max" ]]; then
+      current=$(cat "/sys/fs/cgroup${path}/memory.current")
+      echo $((max - current))
+      return
+    fi
+    path=$(dirname "${path}")
+  done
+  echo 9223372036854775807
+}
 
 gpu_is_free() {
   local slot=$1
@@ -79,7 +115,10 @@ while true; do
       labels[$slot]=""
     fi
 
-    if ((next < ${#queue[@]})) && gpu_is_free "${slot}" "${gpu_uuids[$slot]}"; then
+    if ((next < ${#queue[@]})) && \
+      (( $(active_compute_count) < max_concurrent )) && \
+      (( $(cgroup_memory_headroom) >= min_headroom_bytes )) && \
+      gpu_is_free "${slot}" "${gpu_uuids[$slot]}"; then
       run_dir=${queue[$next]}
       next=$((next + 1))
       rm -f "${run_dir}/output.out" "${run_dir}/time.txt"

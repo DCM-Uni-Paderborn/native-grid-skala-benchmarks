@@ -29,6 +29,12 @@ their applicable license.
 - GPU: four NVIDIA B200 accelerators, 183359 MiB reported memory per device
 - NVIDIA driver: 595.71.05
 - CUDA toolkit used for the build: 12.8
+- interactive allocation memory limit: 375 GiB
+
+The all-electron ACONF calculations require approximately 107--113 GiB of
+host memory per process. The dynamic runner therefore limits this allocation to
+three simultaneous calculations even when four GPUs are visible. This avoids
+memory-pressure termination and is recorded separately from GPU occupancy.
 
 Every timing table additionally records the executable revision, process/thread
 layout, device count, and maximum resident set size. Absolute timings from
