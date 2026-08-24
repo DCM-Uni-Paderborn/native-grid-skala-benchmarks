@@ -27,4 +27,6 @@ The test is repeated for all-electron GAPW and pseudopotential `GAPW_XC` with `P
 
 ## Production gate
 
-The complete dietGMTKN55 and LC10 calculations remain blocked until the plane-wave and atom-grid protocols are frozen. Production inputs are generated once from the validated settings and pass the structural audit in `scripts/audit_diet_inputs.py` before submission.
+The dietGMTKN55 production protocol is frozen at 640 Ry for the all-electron and mixed all-electron/GTH routes and at 400 Ry for the all-GTH `GAPW_XC` one-center route. Isolated species use 12 angstrom total molecular padding in every Cartesian direction together with nonperiodic boundary conditions and the analytic Poisson solver. Production inputs are generated once from these settings and pass the structural audit in `scripts/audit_diet_inputs.py` before submission.
+
+LC10 production remains gated by the corresponding periodic checks of energies, particle number, forces, stress, full and symmetry-reduced k-point sampling, and cell-size convergence. Molecular and periodic production settings are therefore frozen independently.
