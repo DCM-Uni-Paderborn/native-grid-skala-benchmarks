@@ -27,6 +27,22 @@ The test is repeated for all-electron GAPW and pseudopotential `GAPW_XC` with `P
 
 ## Production gate
 
-The dietGMTKN55 production protocol is frozen at 640 Ry for the all-electron and mixed all-electron/GTH routes and at 400 Ry for the all-GTH `GAPW_XC` one-center route. Isolated species use 12 angstrom total molecular padding in every Cartesian direction together with nonperiodic boundary conditions and the analytic Poisson solver. Production inputs are generated once from these settings and pass the structural audit in `scripts/audit_diet_inputs.py` before submission.
+The dietGMTKN55 plane-wave protocol is frozen at 640 Ry for the all-electron and mixed all-electron/GTH routes and at 400 Ry for the all-GTH `GAPW_XC` one-center route. Isolated calculations use 25 angstrom of total molecular padding in every Cartesian direction,
+
+```text
+L_i = max_A(R_A,i) - min_A(R_A,i) + 25 angstrom.
+```
+
+The coordinates are centered, both the cell and Poisson periodicities are `NONE`, and `POISSON_SOLVER ANALYTIC` is used. Thus, 25 angstrom denotes the total added cell extent, not 25 angstrom on each side of the molecule. The generator records this rule in the manifest, and `scripts/audit_diet_inputs.py` verifies every cell against the molecular extent before submission.
+
+The setting was selected from matched ACONF-5 and ACONF-8 calculations with the production `GAPW_XC`-GTH one-center route. The table reports the maximum change across the three required species and the two reaction energies.
+
+| Padding pair (angstrom) | Maximum species change (microhartree) | Maximum reaction change (kcal/mol) | Maximum electron-count change |
+|---|---:|---:|---:|
+| 22 vs 24 | 0.159 | 0.000138 | 7.94e-8 |
+| 24 vs 25 | 0.189 | 0.000163 | 1.43e-7 |
+| 22 vs 25 | 0.348 | 0.000298 | 9.72e-8 |
+
+All comparisons pass the prespecified limits of 5 microhartree per species, 0.005 kcal/mol per reaction, and 1e-5 electrons. Although 22 angstrom already lies on the observed plateau, 25 angstrom is retained as a conservative common production setting.
 
 LC10 production remains gated by the corresponding periodic checks of energies, particle number, forces, stress, full and symmetry-reduced k-point sampling, and cell-size convergence. Molecular and periodic production settings are therefore frozen independently.

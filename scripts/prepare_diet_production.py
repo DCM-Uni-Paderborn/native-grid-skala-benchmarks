@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 from pathlib import Path
 
@@ -29,17 +30,47 @@ SCF_BLOCK = """      &SCF
 """
 
 
-def replace_once(text: str, pattern: str, replacement: str) -> str:
-    updated, count = re.subn(pattern, replacement, text, count=1, flags=re.MULTILINE | re.DOTALL)
+def replace_once(
+    text: str, pattern: str, replacement: str, *, dotall: bool = False
+) -> str:
+    flags = re.MULTILINE | (re.DOTALL if dotall else 0)
+    updated, count = re.subn(pattern, replacement, text, count=1, flags=flags)
     if count != 1:
         raise ValueError(f"Expected one match for {pattern!r}, found {count}")
     return updated
 
 
+def set_total_padding(text: str, padding: int) -> str:
+    coord_match = re.search(r"(?ms)^\s*&COORD\s*$\n(.*?)^\s*&END COORD\s*$", text)
+    if coord_match is None:
+        raise ValueError("Coordinate block not found")
+
+    coordinates = []
+    for line in coord_match.group(1).splitlines():
+        fields = line.split()
+        if len(fields) < 4:
+            continue
+        try:
+            coordinates.append(tuple(float(value) for value in fields[-3:]))
+        except ValueError:
+            continue
+    if not coordinates:
+        raise ValueError("No Cartesian coordinates found")
+
+    lengths = []
+    for axis in range(3):
+        values = [coordinate[axis] for coordinate in coordinates]
+        lengths.append(float(math.ceil(max(values) - min(values) + padding)))
+    abc = " ".join(f"{length:.1f}" for length in lengths)
+    return replace_once(text, r"(?m)^(\s*ABC\s+).*$", rf"\g<1>{abc}")
+
+
 def common_transform(
-    text: str, cutoff: int, radial: int, lebedev: int, project: str
+    text: str, cutoff: int, radial: int, lebedev: int, padding: int, project: str
 ) -> str:
-    text = replace_once(text, r"^      &SCF\n.*?^      &END SCF\n", SCF_BLOCK)
+    text = replace_once(
+        text, r"^      &SCF\n.*?^      &END SCF\n", SCF_BLOCK, dotall=True
+    )
     text = replace_once(text, r"(?m)^(\s*CUTOFF\s+)\S+", rf"\g<1>{cutoff}.0")
     text = replace_once(text, r"(?m)^(\s*PROJECT_NAME\s+)\S+", rf"\g<1>{project}")
     text, radial_count = re.subn(
@@ -50,7 +81,7 @@ def common_transform(
     )
     if radial_count == 0 or lebedev_count == 0:
         raise ValueError("Native atom-grid settings are missing")
-    return text
+    return set_total_padding(text, padding)
 
 
 def set_qs_method(text: str, method: str) -> str:
@@ -97,6 +128,7 @@ def main() -> None:
     parser.add_argument("--gapwxc-cutoff", type=int, default=400)
     parser.add_argument("--radial-grid", type=int, default=100)
     parser.add_argument("--lebedev-grid", type=int, default=434)
+    parser.add_argument("--padding", type=int, default=12)
     args = parser.parse_args()
 
     manifest = json.loads((args.source / "manifest.json").read_text())
@@ -107,6 +139,7 @@ def main() -> None:
             "gapwxc_gth_cutoff_ry": args.gapwxc_cutoff,
             "radial_grid": args.radial_grid,
             "lebedev_grid": args.lebedev_grid,
+            "molecular_padding_angstrom": args.padding,
             "eps_scf": 1.0e-7,
             "ot_stepsize": 0.10,
             "heavy_gth_elements": sorted(HEAVY_GTH_ELEMENTS),
@@ -123,7 +156,7 @@ def main() -> None:
             source = args.source / record["routes"]["gapw-ae"]
             text = common_transform(
                 source.read_text(), args.ae_cutoff, args.radial_grid,
-                args.lebedev_grid, f"{digest[:12]}_gapw_ae"
+                args.lebedev_grid, args.padding, f"{digest[:12]}_gapw_ae"
             )
             text = text.replace("QZVPP-MOLOPT-PBE-ae", "TZVPP-MOLOPT-PBE-ae")
             routes["shared-gapw-ae"] = write_case(
@@ -138,7 +171,7 @@ def main() -> None:
                 text = convert_covered_kinds_to_ae(source.read_text())
                 text = common_transform(
                     text, args.ae_cutoff, args.radial_grid, args.lebedev_grid,
-                    f"{digest[:12]}_{route.replace('-', '_')}"
+                    args.padding, f"{digest[:12]}_{route.replace('-', '_')}"
                 )
                 text = set_qs_method(text, "GAPW")
                 if f"PSEUDOPOTENTIAL_GAPW_REPRESENTATION {representation}" not in text:
@@ -148,7 +181,7 @@ def main() -> None:
         source = args.source / record["routes"]["gapw-gth-paw"]
         text = common_transform(
             source.read_text(), args.gapwxc_cutoff, args.radial_grid,
-            args.lebedev_grid, f"{digest[:12]}_gapwxc_gth_paw"
+            args.lebedev_grid, args.padding, f"{digest[:12]}_gapwxc_gth_paw"
         )
         text = set_qs_method(text, "GAPW_XC")
         routes["gapwxc-gth-one-center"] = write_case(

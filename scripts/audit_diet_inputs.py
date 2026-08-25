@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 from collections import Counter
 from pathlib import Path
@@ -24,10 +25,39 @@ def one_match(text: str, pattern: str, label: str) -> str:
     return matches[0]
 
 
+def expected_cell(text: str, padding: float) -> tuple[float, float, float]:
+    coord_match = re.search(r"(?ms)^\s*&COORD\s*$\n(.*?)^\s*&END COORD\s*$", text)
+    if coord_match is None:
+        raise ValueError("coordinate block is missing")
+
+    coordinates = []
+    for line in coord_match.group(1).splitlines():
+        fields = line.split()
+        if len(fields) < 4:
+            continue
+        try:
+            coordinates.append(tuple(float(value) for value in fields[-3:]))
+        except ValueError:
+            continue
+    if not coordinates:
+        raise ValueError("no Cartesian coordinates found")
+
+    return tuple(
+        float(math.ceil(max(row[axis] for row in coordinates)
+                        - min(row[axis] for row in coordinates) + padding))
+        for axis in range(3)
+    )
+
+
 def audit_file(path: Path, route: str, protocol: dict[str, object]) -> None:
     text = path.read_text()
     method = one_match(text, r"^\s*METHOD\s+(GAPW(?:_XC)?)$", "QS method")
     cutoff = float(one_match(text, r"^\s*CUTOFF\s+([0-9.]+)$", "cutoff"))
+    cell = tuple(
+        float(value)
+        for value in one_match(text, r"^\s*ABC\s+(.+)$", "cell").split()
+    )
+    required_cell = expected_cell(text, float(protocol["molecular_padding_angstrom"]))
     representations = re.findall(
         r"^\s*PSEUDOPOTENTIAL_GAPW_REPRESENTATION\s+(\S+)$", text, flags=re.MULTILINE
     )
@@ -42,6 +72,11 @@ def audit_file(path: Path, route: str, protocol: dict[str, object]) -> None:
         raise ValueError(f"method {method}, expected {expected_method}")
     if cutoff != expected_cutoff:
         raise ValueError(f"cutoff {cutoff}, expected {expected_cutoff}")
+    if len(cell) != 3 or any(
+        not math.isclose(actual, expected, abs_tol=1.0e-9)
+        for actual, expected in zip(cell, required_cell)
+    ):
+        raise ValueError(f"cell {cell}, expected {required_cell}")
     if "GAPW_ACCURATE_XCINT .TRUE." not in text:
         raise ValueError("GAPW_ACCURATE_XCINT is not enabled")
     if len(re.findall(r"^\s*EPS_SCF\s+1e-07$", text, flags=re.MULTILINE)) != 2:
