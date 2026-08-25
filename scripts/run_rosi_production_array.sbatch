@@ -49,7 +49,7 @@ if [[ $mode == gpu ]]; then
   launch=(srun --mpi=pmix --ntasks=1 --cpus-per-task="$SLURM_CPUS_PER_TASK" --cpu-bind=cores)
   input_name=input.inp
 elif [[ $mode == cpu ]]; then
-  binary=$native_root/install/cp2k-cpu/bin/cp2k.psmp
+  binary=$native_root/install/cp2k-cpu/bin/cp2k.ssmp
   export CP2K_DATA_DIR=$native_root/cp2k/data
   export CUDA_VISIBLE_DEVICES=-1
   export LD_LIBRARY_PATH=$native_root/install/dbcsr-cpu-serial/lib:$native_root/install/cuda-stubs:${LD_LIBRARY_PATH:-}
