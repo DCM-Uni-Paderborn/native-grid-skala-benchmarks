@@ -6,7 +6,8 @@ production=$root/diet-production-p25
 
 # The padding controls use the same large atom grids. Let them release memory
 # before the eight-slot production queue starts.
-while tmux ls 2>/dev/null | grep -Eq 'padding-p2[245]|padding-high-ascending'; do
+while tmux ls 2>/dev/null | grep -Eq \
+  'padding-p2[245]|padding-high-ascending|native-skala-p25-early'; do
   sleep 30
 done
 
