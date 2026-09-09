@@ -1,0 +1,388 @@
+\documentclass[10pt,a4paper,twocolumn]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage[margin=1.8cm,columnsep=0.7cm]{geometry}
+\usepackage{graphicx,booktabs,array,amsmath,microtype}
+\usepackage[super,sort&compress]{natbib}
+\usepackage{xcolor}
+\usepackage{xurl}
+\usepackage[colorlinks=true,allcolors=teal]{hyperref}
+\usepackage{authblk}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0pt}
+\newcommand{\CPtwoK}{CP2K}
+\newcommand{\Skala}{Skala}
+\newcommand{\GPW}{GPW}
+\newcommand{\GAPW}{GAPW}
+\newcommand{\GTH}{GTH}
+\newcommand{\GX}{GAPW-XC}
+\newcommand{\uvec}{\boldsymbol{u}}
+\newcommand{\gvec}{\boldsymbol{g}}
+\title{Native-grid Skala in CP2K: a GPW/GAPW route from gas-phase molecules to condensed phases}
+\author[1,2]{Franz P\"oschel}
+\author[1,2]{Johann Pototschnig}
+\author[3]{J\"urg Hutter}
+\author[1,2,4]{Thomas D. K\"uhne\textsuperscript{\dag}}
+\affil[1]{Center for Advanced Systems Understanding (CASUS), G\"orlitz, Germany}
+\affil[2]{Helmholtz-Zentrum Dresden-Rossendorf, Dresden, Germany}
+\affil[3]{Department of Chemistry, University of Zurich, Zurich, Switzerland}
+\affil[4]{Institute of Artificial Intelligence, Technische Universit\"at Dresden, Dresden, Germany}
+\date{}
+\begin{document}
+\raggedbottom
+\twocolumn[\maketitle
+\begin{center}\small
+\textsuperscript{\dag}E-mail: \href{mailto:tkuehne@cp2k.org}{tkuehne@cp2k.org}
+\end{center}
+\begin{abstract}
+Machine-learned exchange--correlation functionals combine high molecular accuracy with the prospect of efficient condensed-phase simulation. We implement Skala natively in CP2K using its Gaussian and plane-wave (GPW) and Gaussian and augmented-plane-wave (GAPW) methods, without GauXC. The central development is a joint one-centre reconstruction of density, density gradients, and kinetic-energy density before functional evaluation. This preserves mixed gradient terms and nonlocal couplings across the smooth and atom-local contributions for all-electron and pseudopotential calculations. An XC-specific GAPW representation separates rapidly varying local structure from the smooth plane-wave grid and provides an efficient default starting point for GTH pseudopotentials. The implementation incorporates Brillouin-zone sampling and point-group symmetry reduction. On 70 common dietGMTKN55 reactions, mixed all-electron/pseudopotential calculations yield a mean absolute error of 1.89~kcal~mol$^{-1}$ and a median of 0.55~kcal~mol$^{-1}$; comparison with the earlier GauXC implementation establishes comparable molecular performance. Crystalline CO$_2$, NH$_3$, and urea probe dispersion, electrostatics, and progressively connected hydrogen bonding. The tested Skala--D3(BJ) protocol systematically overbinds these crystals relative to diffusion Monte Carlo, with a material-dependent sensitivity to core treatment. Numerical controls support a distinction between this condensed-phase transfer limitation and the consistency of the native implementation. The resulting framework connects molecular Skala to condensed-phase electronic structure and enables future development using periodic many-body reference data.
+\end{abstract}
+\vspace{0.5cm}]
+
+\section{Introduction}
+
+The accuracy of Kohn--Sham density-functional theory is governed to a large extent by the approximation to exchange and correlation.\cite{Hohenberg1964,Kohn1965} Learning this contribution from accurate electronic-structure data offers a route beyond conventional functional forms. Skala combines local density information with a learned nonlocal representation and has demonstrated strong performance across molecular energetics.\cite{Skala2025} Its reported training data are molecular, including reaction energies and noncovalent interactions. Applying the same model to condensed phases therefore raises two distinct questions: can the functional be evaluated consistently within a periodic electronic-structure method, and does its molecular accuracy transfer to the resulting electronic environments?
+
+A condensed phase is not simply a gas-phase calculation in a larger box. Coordination, polarization, screening, and collective response change the electronic environments sampled by the functional. Anderson's ``More Is Different'' perspective captures why knowledge of the constituents alone need not determine the behaviour of an extended system.\cite{Anderson1972} For a learned density functional, the corresponding challenge is one of transfer between physical environments: the exact functional is universal, but a finite training set need not teach an approximation the collective response of condensed matter.
+
+Our molecular implementation of Skala in CP2K through GauXC provides an independent reference for this development.\cite{Poeschel2026MolecularSkala,Williams2020} There, a Gaussian-basis density matrix is evaluated on an atom-centred quadrature. Here, the interface instead uses density fields constructed by CP2K's own GPW/GAPW machinery.\cite{Lippert1997,Lippert1999,CP2KMadeSimple2026} This gives direct access to the existing treatment of boundary conditions, reciprocal-space electrostatics, Brillouin-zone sampling, and symmetry. The important methodological issue is not merely replacing one quadrature library with another. A learned nonlocal functional must receive a jointly reconstructed density, including the one-centre contributions of the augmented representation.
+
+We develop this reconstruction for all-electron and pseudopotential calculations and describe its variational coupling to the electronic degrees of freedom. A molecular comparison establishes the connection to the existing Skala implementations. We then consider three compact molecular crystals with complementary bonding motifs and high-level lattice-energy references. Detailed numerical tests and a ten-solid equation-of-state comparison are collected in the Electronic Supplementary Information (ESI). The aim is to establish a practical native implementation while making the distinction between implementation consistency and condensed-phase model accuracy explicit.
+
+\section{Theory and Implementation}
+
+\subsection{From the density matrix to primitive fields}
+
+In a Gaussian basis, the spin density at a point is obtained from the occupied Bloch orbitals or, equivalently, the density matrix,
+\begin{equation}
+ \rho_\sigma(\mathbf r)=\sum_{\mathbf k}w_{\mathbf k}
+ \sum_{\mu\nu}P^\sigma_{\mu\nu}(\mathbf k)
+ \chi_{\mu\mathbf k}(\mathbf r)\chi^*_{\nu\mathbf k}(\mathbf r).
+ \label{eq:rho}
+\end{equation}
+The k-point weights are normalized, and $P^\sigma(\mathbf k)$ is complex Hermitian; the contracted density is real. The primitive input to the native interface is
+\begin{equation}
+ \begin{aligned}
+ \uvec_\sigma(\mathbf r)&=\big(\rho_\sigma,\nabla\rho_\sigma,\tau_\sigma\big),\\
+ \tau_\sigma&=\tfrac12\sum_{n\mathbf k}w_{\mathbf k}f_{n\mathbf k\sigma}
+ |\nabla\psi_{n\mathbf k\sigma}|^2.
+ \end{aligned}
+ \label{eq:primitive}
+\end{equation}
+Thus Skala receives densities, gradients, and kinetic-energy densities, not the density matrix itself. The density matrix remains within CP2K, where the fields and the corresponding potential matrix are constructed.
+
+On quadrature points $\mathbf r_i$ with weights $W_i$, the model energy has the form\cite{Skala2025}
+\begin{equation}
+ E_{\rm xc}^{\theta}=-C_{\rm x}\sum_i W_i
+ \left(\rho_{\alpha i}^{4/3}+\rho_{\beta i}^{4/3}\right)
+ f_{\theta}[\mathbf x]_i.
+ \label{eq:skala-energy}
+\end{equation}
+Here $C_{\rm x}=\tfrac34(6/\pi)^{1/3}$ and $\mathbf x$ contains spin densities, gradient invariants, and kinetic-energy densities. The enhancement factor $f_\theta$ depends on features at multiple points within an atom-associated block, rather than only at point $i$. Consequently, both the reconstructed fields and their spatial organization enter the discrete functional. Our contribution is the consistent construction and differentiation of this functional within GPW/GAPW, not a modification or retraining of the Skala model.
+
+\subsection{GPW and the augmented density decomposition}
+
+In GPW, Gaussian orbital products are collocated on a hierarchy of regular real-space grids and represented by plane waves for operations such as solving the Poisson equation.\cite{Lippert1997} A finer plane-wave grid resolves more rapidly varying products, but increases the cost throughout the cell. This is particularly restrictive for the sharply varying core density of an all-electron calculation. GAPW separates the global smooth density from atom-local contributions so that these two length scales need not be resolved on the same grid.\cite{Lippert1999}
+
+For the primitive fields this separation is written
+\begin{equation}
+ \uvec_\sigma=\widetilde{\uvec}_\sigma+
+ \sum_{A,\mathbf L}\left(\uvec^h_{A\mathbf L,\sigma}
+                  -\uvec^s_{A\mathbf L,\sigma}\right),
+ \label{eq:reconstruct}
+\end{equation}
+where $A$ labels atoms and $\mathbf L$ the periodic images required by the boundary conditions. The hard field restores the local representation, while the soft field subtracts the corresponding contribution already included in the global smooth field. The subtraction prevents double counting: a one-centre correction is not an independent atomic energy added to the system.
+
+The same construction is needed for all components of $\uvec_\sigma$. For example, in a real atom-local basis $\{\phi^q_{Aa}\}$, with $q=h,s$, the one-centre density and kinetic-energy density have the structure
+\begin{align}
+ \rho^q_{A\sigma}(\mathbf r)&=\sum_{ab}D^{q,\sigma}_{A,ab}
+                    \phi^q_{Aa}(\mathbf r)\phi^q_{Ab}(\mathbf r),\nonumber\\
+ \tau^q_{A\sigma}(\mathbf r)&=\tfrac12\sum_{ab}D^{q,\sigma}_{A,ab}
+                \nabla\phi^q_{Aa}(\mathbf r)\!\cdot\!\nabla\phi^q_{Ab}(\mathbf r).
+ \label{eq:one-centre-fields}
+\end{align}
+The local coefficients $D^{q,\sigma}_{A,ab}$ are obtained from the electronic density matrix through the GAPW projection. Density gradients follow by differentiating the orbital products. Reconstructing $\rho$ alone is therefore insufficient: $\tau$ is an orbital-dependent field and cannot be inferred by differentiating the reconstructed density. Finite one-centre expansions and finite grids introduce representation and integration errors into Eq.~\eqref{eq:reconstruct}; their convergence must be checked together with the energy and its derivatives.
+
+\subsection{All-electron and pseudopotential GAPW}
+
+For all-electron GAPW, this reconstruction contains the explicitly treated core and valence electrons. With a GTH pseudopotential, it reconstructs the explicit valence representation; it does not reintroduce core electrons removed by the effective-core Hamiltonian.\cite{Goedecker1996,Krack2005} This distinction is essential when comparing all-electron and pseudopotential results. Their difference is not, in general, an error of numerical integration.
+
+In the all-electron route, the hard-minus-soft contribution is intrinsic to the chosen GAPW representation. Passing only its smooth part to Skala would omit part of the all-electron fields. An all-electron model evaluation without an \emph{explicit} one-centre correction is nevertheless possible in a different construction: direct evaluation of the complete Gaussian-basis density matrix on an adequately resolved atom grid, as in the molecular GauXC interface. There the full fields are already present. The need for reconstruction is thus determined by how the fields are represented, not by whether the integration library is GauXC or native CP2K.
+
+For pseudopotential GAPW we distinguish a direct-valence route from an augmented-valence route. The former supplies the direct regular-grid valence fields. The latter includes the atom-local hard-minus-soft fields in Eq.~\eqref{eq:reconstruct}. The local reconstruction is PAW-like in its algebraic organization, but it is neither a change to a PAW Hamiltonian nor an all-electron reconstruction of the removed core. The same ECP and explicit electron count are retained. At the chosen finite representation, the two routes need not present identical fields to the nonlinear model; their agreement must be assessed for observables rather than inferred solely from a common pseudopotential.
+
+The selection of one-centre contributions is made by atomic kind. A mixed AE/ECP calculation consequently retains the AE corrections even when the ECP kinds use direct-valence fields. In the molecular benchmark, ``with/without one-centre correction'' refers to this ECP choice, not to removing the intrinsic AE reconstruction. For the light-element molecular crystals, AE and all-ECP calculations instead provide separate, complete core-treatment comparisons.
+
+\subsection{The XC-specific GAPW representation}
+
+GAPW-XC applies the augmented construction specifically to the XC fields. The electrostatic and XC representations can then use different smooth densities derived from the same orbital density matrix. CP2K collocates a separate, softer XC density, denoted $\widetilde\rho_{\rm xc}$, together with the corresponding gradient and kinetic-energy density. The complementary atom-local fields restore the structure shifted out of this regular-grid contribution. In compact form,
+\begin{equation}
+ \uvec^{\rm XC}_\sigma
+ =\widetilde{\uvec}_{{\rm xc},\sigma}
+ +\sum_{A,\mathbf L}\big(\uvec^h_{A\mathbf L,\sigma}
+                         -\uvec^s_{A\mathbf L,\sigma}\big).
+ \label{eq:gapw-xc}
+\end{equation}
+The associated hard/soft projections and smooth collocation must be used consistently; the smooth term cannot simply be exchanged while leaving its reverse mapping unchanged. This XC-specific decomposition does not change the selected GTH potential or add core electrons.
+
+The practical advantage is that rapidly varying local XC structure can be resolved on radial--angular grids without forcing an equally fine plane-wave grid over the whole cell. GAPW-XC is therefore our recommended default starting representation for GTH/ECP native Skala calculations. The paired conformational cutoff study in the ESI supports its faster convergence relative to GPW. The one-centre reconstruction makes this efficiency possible while retaining the model's response to the complete augmented fields. Standard GAPW and GAPW-XC distribute the regular-grid and atom-local work differently, so their finite-resolution errors are assessed through complete energy differences and derivatives. This numerical advantage is separate from the physical approximation introduced by replacing core electrons with a pseudopotential.
+
+Table~\ref{tab:representations} separates the electronic Hamiltonian, the smooth XC field, and the local reconstruction. Merely deleting the matching local terms from Eq.~\eqref{eq:gapw-xc} would leave the softer XC field uncompleted. This must be distinguished from selecting the direct-valence ECP route: that choice also retains the unsmoothed valence basis for field construction and therefore supplies GPW-like XC fields, even within a calculation otherwise labelled GAPW-XC. It is a complete alternative representation, not an incomplete augmented one. In a standard GAPW calculation, choosing direct-valence XC likewise does not by itself replace the remaining electrostatic machinery.
+
+\begin{table*}[t]
+\centering\small
+\caption{Density representations in the native interface. One-centre fields are added before descriptor formation and Skala evaluation. ECP denotes the selected effective-core potential; no removed core electrons are restored by hard-minus-soft valence reconstruction.}
+\label{tab:representations}
+\vspace{3pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.13\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.32\textwidth}@{}}
+\toprule
+Representation & Hamiltonian & Smooth XC field & Atom-local contribution\\
+\midrule
+GPW & ECP & Direct valence & None\\
+GAPW-AE & All electron & Smooth GAPW & Hard minus soft, including explicit core and valence\\
+GAPW-GTH, direct & ECP & Direct valence & None for ECP kinds\\
+GAPW-GTH, one-centre & ECP & Smooth GAPW & Hard-minus-soft valence fields\\
+GAPW-XC/GTH & ECP & Softer XC-specific field & Matching hard-minus-soft valence fields\\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{One reconstruction, one joint functional}
+
+Classical GAPW organizes local or semilocal XC integration as a smooth-grid contribution plus atom-centred hard-minus-soft energy integrals. Its validity relies on the construction and matching of the local fields, not on linearity of the XC functional. For a nonlinear nonlocal model, the expression
+\begin{equation}
+ E_{\rm xc}[\widetilde{\uvec}]+\sum_A
+ \big(E_{\rm xc}[\uvec^h_A]-E_{\rm xc}[\uvec^s_A]\big)
+ \label{eq:wrong}
+\end{equation}
+is not interchangeable with evaluating the functional on Eq.~\eqref{eq:reconstruct}. The model is nonlinear and nonlocal. Separate evaluations omit both mixed local descriptors and couplings between different contributions to the reconstructed environment.
+
+Even a quadratic gradient invariant illustrates the issue. With $\gvec=\widetilde{\gvec}+\gvec^h-\gvec^s$,
+\begin{align}
+ |\gvec|^2={}&|\widetilde{\gvec}|^2+|\gvec^h|^2+|\gvec^s|^2
+ +2\widetilde{\gvec}\!\cdot\!\gvec^h \nonumber\\
+ &-2\widetilde{\gvec}\!\cdot\!\gvec^s-2\gvec^h\!\cdot\!\gvec^s.
+ \label{eq:cross}
+\end{align}
+The cross terms exist wherever the corresponding gradient fields overlap, particularly in augmentation regions. Notice also the positive $|\gvec^s|^2$ term in the reconstructed invariant: subtracting a separately evaluated soft energy is not equivalent to subtracting a field before forming its nonlinear descriptors. The spin-coupled case follows the same principle. The six smooth, hard, and soft spin-gradient vectors admit fifteen unordered off-diagonal products, twelve of which couple different components; the full expansion is given in the ESI. A larger common grid alone does not recover these terms if the three densities are still passed to separate functional evaluations.
+
+The nonlocal difficulty goes beyond this local algebra. A hard contribution near one centre can alter the learned response at another point in the same descriptor block, where the smooth density and neighbouring augmentation fields also contribute. Separate hard and soft model evaluations never see that combined environment. Even exact quadrature of the separated expressions would not restore these missing dependencies.
+
+We therefore interpolate the smooth fields and add the hard-minus-soft fields \emph{pointwise}, before forming model descriptors. Skala then evaluates the jointly reconstructed fields. Here, ``one evaluation'' means one consistent functional of the combined fields, not a restriction to one physical inference call: atom-block batching and parallel execution remain possible. The distinction is between computational partitioning of the same functional and replacing it by a sum of different functionals.
+
+\begin{figure}[t]
+ \centering
+ \includegraphics[width=\columnwidth]{native-reconstruction.pdf}
+ \caption{The native interface reconstructs the primitive fields before descriptor formation and Skala evaluation. The reverse operation follows the adjoint of the same reconstruction, preserving the hard-minus-soft signs. The atom-centred quadrature resolves local structure without requiring a uniformly fine regular grid.}
+ \label{fig:reconstruction}
+\end{figure}
+
+\subsection{Accurate one-centre integration and joint reconstruction}
+
+The classical accurate GAPW XC integration scheme addresses a different difficulty: cancellation between smooth-grid and soft atom-centred integrals evaluated on dissimilar quadratures.\cite{Lippert1999,CP2K2020} Using an atom-local switch
+\begin{equation}
+ s_A(\mathbf r)=\exp[-\alpha_A|\mathbf r-\mathbf R_A|^2],
+ \label{eq:xc-switch}
+\end{equation}
+with periodic images understood, its local/semilocal energy organization is schematically
+\begin{align}
+ E_{\rm xc}^{\rm acc}\simeq{}&\int\!\left(1-\sum_A s_A\right)
+                         e_{\rm xc}[\widetilde{\uvec}]\,d\mathbf r\nonumber\\
+ &+\sum_A\int\!\left\{e_{\rm xc}[\uvec_A^h]
+                  -(1-s_A)e_{\rm xc}[\uvec_A^s]\right\}d\mathbf r.
+ \label{eq:accurate-integration}
+\end{align}
+Here $e_{\rm xc}$ is a pointwise energy density, not an independent nonlocal Skala calculation. Near a nucleus, the hard atom-centred term carries the rapidly varying contribution while the nearly cancelling smooth and soft terms are suppressed. The local matching assumptions of GAPW underlie this rearrangement. The switching weights, quadrature, and their geometric derivatives must remain consistent.
+
+Equation~\eqref{eq:accurate-integration} does not supply the mixed descriptors missing from Eq.~\eqref{eq:wrong}. The native Skala term instead uses its own jointly reconstructed fields and atom-composite quadrature. We retain accurate integration for the applicable classical GAPW terms, but do not multiply the Skala reconstruction by the classical switching weights or add separately evaluated hard/soft Skala energies to it. This distinction separates an improvement of classical integration from the extension required for a learned nonlocal functional.
+
+\subsection{Periodic atom-composite quadrature}
+
+For a radial--angular point $\mathbf r_{Ai}$ centred on atom $A$, the discrete reconstruction is
+\begin{equation}
+ \begin{aligned}
+ \uvec_{Ai,\sigma}={}&\sum_g I_{Ai,g}\widetilde{\uvec}_{g,\sigma}\\
+ &+\sum_{B,\mathbf L}\left[\uvec^h_{B\mathbf L,\sigma}(\mathbf r_{Ai})
+                        -\uvec^s_{B\mathbf L,\sigma}(\mathbf r_{Ai})\right].
+ \end{aligned}
+ \label{eq:composite}
+\end{equation}
+The interpolation $I$ maps the regular-grid fields to the target atom grid. The second sum includes neighbouring centres and periodic images, not only the target atom. Thus ``one-centre'' describes the source expansion; it does not mean that its contribution is confined to a separate model call or omitted from neighbouring descriptor blocks. The sum is absent for direct-valence ECP kinds, while intrinsic AE contributions are retained.
+
+Let $w_{Ai}$ denote the unpartitioned radial--angular quadrature. Smooth atom-image partition functions define the energy weights,
+\begin{equation}
+ p_{A\mathbf L}(\mathbf r)=
+ \frac{q_{A\mathbf L}(\mathbf r)}{\sum_{B,\mathbf L'}q_{B\mathbf L'}(\mathbf r)},
+ \qquad \sum_{A,\mathbf L}p_{A\mathbf L}(\mathbf r)=1,
+ \label{eq:partition}
+\end{equation}
+so that a target grid carries $W_{Ai}=w_{Ai}p_{A\mathbf0}(\mathbf r_{Ai})$. The differentiable shape functions $q$ provide a Becke-like partition.\cite{Becke1988} Periodic images distribute the integration over equivalent cells without double counting. A distinct partition over the target atom's own periodic images defines its nonlocal descriptor domain. This self-image partition does not cut that domain at boundaries between different atoms; energy partitioning and descriptor weighting therefore have different roles.
+
+The same construction reduces to a molecular atom-composite quadrature when no periodic images are required. A regular common grid can also support joint reconstruction, but resolving hard local fields everywhere is expensive. On the atom-composite grid, radial and angular resolution control the local structure independently of the plane-wave cutoff for the smooth contribution. This is an efficiency distinction, not a reason to evaluate different functionals on the two layouts.
+
+Particle number provides an additional consistency check. The explicit electronic count is determined by the occupied density matrix and overlap matrix,
+\begin{equation}
+ N=\sum_{\mathbf k\sigma}w_{\mathbf k}
+           \mathrm{Tr}[P^\sigma(\mathbf k)S(\mathbf k)].
+ \label{eq:particle-number}
+\end{equation}
+The integral of the represented density is organized as $\widetilde N+\sum_A(N_A^h-N_A^s)$, whereas the finite model quadrature gives $N_Q=\sum_{Ai\sigma}W_{Ai}\rho_{Ai,\sigma}$. A discrepancy between $N_Q$ and Eq.~\eqref{eq:particle-number} tests the field representation and quadrature; it is not, by itself, a change in SCF occupations. No density-dependent renormalization is applied, since it would alter both the functional and its variational derivative. Cutoff, radial/angular, and one-centre convergence are consequently distinct from changing the core treatment.
+
+Finally, a nonlinear core correction must not be confused with hard-minus-soft reconstruction. An NLCC potential supplies a separate frozen-core density that can be added to the valence density and gradient before descriptor formation. It does not by itself provide a corresponding core kinetic-energy density. This is not equivalent to the explicit core orbitals of GAPW-AE, and it is not the origin of the one-centre corrections compared here.
+
+\subsection{Variational coupling, forces, and stress}
+
+Let $\mathcal R$ denote the discrete reconstruction from the density matrix $P$ to the model fields. The XC contribution to the generalized Kohn--Sham matrix is obtained by the chain rule,
+\begin{equation}
+ V_{\rm xc}=\left(\frac{\partial\mathcal R}{\partial P}\right)^{\!*}
+             \frac{\partial E_{\rm xc}}{\partial\uvec}.
+ \label{eq:adjoint}
+\end{equation}
+The asterisk denotes the adjoint under the chosen discrete contractions. With $\overline{\uvec}_{Ai}=\partial E_{\rm xc}/\partial\uvec_{Ai}$, Eq.~\eqref{eq:composite} gives, component by component,
+\begin{align}
+ \overline{\widetilde{\uvec}}_g&=\sum_{Ai}I_{Ai,g}\overline{\uvec}_{Ai},\nonumber\\
+ \overline D^h_A&=\left(\frac{\partial\uvec^h_A}{\partial D^h_A}\right)^{\!*}
+                       \overline{\uvec},\qquad
+ \overline D^s_A=-\left(\frac{\partial\uvec^s_A}{\partial D^s_A}\right)^{\!*}
+                       \overline{\uvec}.
+ \label{eq:component-adjoints}
+\end{align}
+The contractions include every target point to which a source contributes. The quadrature weights are already included in $\overline{\uvec}$; applying them a second time would be incorrect. The local coefficients are then projected back to the orbital density matrix. Gradient and kinetic-energy-density adjoints use the differentiated Gaussian products in Eq.~\eqref{eq:one-centre-fields}. Thus the reverse path is the transpose of the actual discrete forward map, rather than an independently interpolated potential. This consistency is particularly important for the cancellation of hard and soft contributions and for self-consistency close to a numerical floor.
+
+At fixed orbital density matrix, the explicit XC derivative with respect to a nuclear coordinate or cell-strain parameter $\lambda$ includes geometry-dependent mappings,
+\begin{equation}
+ \left.\frac{\partial E_{\rm xc}}{\partial\lambda}\right|_P=
+ \sum_{Ai}\overline{\uvec}_{Ai}\!\cdot\!
+                 \left.\frac{\partial\uvec_{Ai}}{\partial\lambda}\right|_P
+ +\left.\frac{\partial E_{\rm xc}}{\partial\lambda}\right|_{\uvec}.
+ \label{eq:geometric-derivative}
+\end{equation}
+The first term includes interpolation and hard/soft-field derivatives; the second includes explicit model-coordinate and quadrature-weight dependence, including both periodic partitions. Stationarity of the complete electronic energy and the basis/overlap Pulay terms are then used to obtain the total force and stress; the XC contribution alone is not stationary with respect to the density matrix. Model differentiation alone is therefore not a complete derivative of the self-consistent total energy. The nuclear force is $-dE/d\mathbf R_A$, and the strain derivative per cell volume gives the stress in the adopted sign convention. Self-consistent finite-difference checks of a force and diagonal stress component in a periodic water test support the derivative consistency of all five representations; numerical errors and the tested scope are documented in the ESI.
+
+\subsection{K points, symmetry, and parallelism}
+
+Brillouin-zone integration enters through the density matrix and Eq.~\eqref{eq:rho}. Symmetry reduction must transform orbital components and Bloch phases consistently, together with the integration weights; multiplying a scalar result by a symmetry count is insufficient. Once the real primitive fields are assembled, Skala need not know whether they originated from a full k mesh or a symmetry-reduced one. Their adjoints are returned to the corresponding complex Hermitian Kohn--Sham matrices. The native implementation uses CP2K's k-point and symmetry infrastructure,\cite{Monkhorst1976,Togo2024Spglib} with full point-group reduction in the molecular-crystal calculations and numerical full/reduced-mesh comparisons in the ESI.
+
+CP2K supplies fields, atom-associated coordinates, energy weights, and descriptor weights directly to the same Skala TorchScript model used by the molecular interface. LibTorch returns the energy and input derivatives without a GauXC integration step. Complete atom blocks can be distributed over MPI ranks or batched on a device because the nonlocal processing retains the atom-block structure. Threaded field construction and back-projection complement CPU or GPU inference. Splitting the computational batch preserves the functional only when each block's descriptor domain and all contributing reconstructed fields are retained. This provides parallel execution without reverting to the separated smooth/hard/soft functional in Eq.~\eqref{eq:wrong}.
+
+\section{Computational Strategy}
+
+We use Skala-1.1 with its accompanying D3(BJ) dispersion contribution.\cite{Skala2025,Grimme2010DFTD3,Grimme2011D3BJ} All comparisons retain the same model and dispersion convention within a dataset. The Gaussian bases and GTH potentials follow the UZH 2026.2 definitions.\cite{Mirhosseini2026UZH} The molecular study uses triple-zeta all-electron bases where available and pseudopotential bases for the heavy-element part of the mixed protocols. ``Mixed'' refers to core treatment, not to a hybrid exchange--correlation functional.
+
+For molecules, the comparison uses 70 common reactions from dietGMTKN55\cite{Gould2018,Goerigk2017} with complete energies in all three native protocols: all-GTH GAPW-XC and mixed GAPW-AE/GTH with direct or one-centre GTH fields. The remaining cases required longer SCF convergence and are not included. The same reaction set and dispersion convention are used throughout, with errors measured against the official reference values. Basis, integration, and selection details are given in the ESI.
+
+The condensed-phase energy study uses CO$_2$, NH$_3$, and urea geometries from the versioned supporting dataset of Della Pia \emph{et al.}\cite{DellaPia2024X23} The systems contain only light elements, allowing a direct all-electron comparison without mixed-core substitutions. All four representations are complete for both crystal and molecule. The electronic lattice energy is
+\begin{equation}
+ E_{\rm latt}=E_{\rm crystal}/Z-E_{\rm molecule},
+ \label{eq:lattice}
+\end{equation}
+where $Z$ is the number of molecules in the cell and negative values denote binding. The gas-phase energy uses the independently supplied molecular reference geometry. The comparison is between electronic energies, without thermal or zero-point contributions.
+
+Crystal and molecular energies use matched basis and quadrature definitions, with nonperiodic electrostatics for the gas-phase references. The crystals employ Gamma-centred $3^3$ k meshes with full point-group reduction. The ESI documents the production settings, basis and grid choices, cutoff and k-point sensitivities, symmetry comparisons, and self-consistent finite-difference force and stress tests. These controls establish the numerical basis for the following comparison without changing the functional or fitting it to the reference energies.
+
+\section{Results and Discussion}
+
+\subsection{Molecular energetics and the GauXC connection}
+
+Table~\ref{tab:molecules} summarizes the 70 common reactions. The mixed all-electron/pseudopotential protocols have an MAE of 1.89~kcal~mol$^{-1}$, compared with 3.51~kcal~mol$^{-1}$ for all-GTH GAPW-XC. Their median absolute errors, however, are similar: 0.55 and 0.60~kcal~mol$^{-1}$. Most reactions are consequently described much better than the all-GTH aggregate MAE alone would suggest. Absolute errors are below 1~kcal~mol$^{-1}$ for 46 of 70 GAPW-XC reactions and 42 of 70 mixed-protocol reactions.
+
+\begin{table}[t]
+\centering\small
+\caption{Errors against official references for the same 70 dietGMTKN55 reactions, in kcal~mol$^{-1}$. Mixed D/1C denotes direct/one-centre GTH fields with the same AE results for the light-element part.}
+\label{tab:molecules}
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{lrrr}
+\toprule
+Statistic & GAPW-XC/GTH & Mixed D & Mixed 1C\\
+\midrule
+Mean signed error & -2.439 & 0.535 & 0.535\\
+Mean absolute error & 3.505 & 1.890 & 1.891\\
+Root-mean-square error & 10.675 & 3.650 & 3.650\\
+Median absolute error & 0.603 & 0.555 & 0.555\\
+Maximum absolute error & 68.488 & 20.450 & 20.450\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The similar medians show that the larger all-GTH MAE is driven by a small number of core-treatment-sensitive reactions. The largest is the ozone-containing W4-11/138 reaction, whose signed error changes from $-68.49$~kcal~mol$^{-1}$ with all-GTH to $+9.27$~kcal~mol$^{-1}$ with mixed core treatment. It remains in the statistics. This contrast separates the typical molecular accuracy from sensitivity to the core Hamiltonian and basis; the reaction-resolved analysis is given in the ESI.
+
+The direct and one-centre mixed protocols differ by at most 0.001915~kcal~mol$^{-1}$ in this set, where the light-element AE energies are shared. The additional GTH reconstruction therefore makes little difference to these retained reaction energies. Its methodological role is nevertheless essential: it supplies the complete augmented fields to the nonlinear functional, irrespective of the extent to which its contribution cancels in an energy difference. The molecular-crystal comparison below tests that role independently in all-GTH systems.
+
+The earlier molecular GauXC implementation provides an independent point of comparison. On the 65 shared reactions with available GPW-GTH data, native GAPW-XC and GauXC have closely similar reference MAEs of 2.219 and 2.181~kcal~mol$^{-1}$, respectively; their direct mean absolute difference is 0.462~kcal~mol$^{-1}$. Thus the native route reaches the same molecular benchmark accuracy scale without GauXC, despite differences in basis and core protocol. The comparison tests practical molecular performance rather than same-basis numerical identity.
+
+Our separate GauXC molecular study connects CP2K to Microsoft's PySCF/Skala calculations under a matched AE/ECP protocol.\cite{Poeschel2026MolecularSkala} Its updated 100-reaction analysis gives reference MAEs of 1.255 and 1.243~kcal~mol$^{-1}$ and a direct cross-code mean absolute difference of 0.058~kcal~mol$^{-1}$. Together, the comparisons establish a consistent molecular accuracy baseline for the native implementation and the earlier molecular interfaces. The 100-reaction results retain their original population and protocol; the ESI provides the detailed cross-code analysis and version information.
+
+\subsection{Three molecular crystals with complementary bonding}
+
+CO$_2$, NH$_3$, and urea form a deliberately compact test of gas-to-condensed-phase transfer. CO$_2$ probes dispersion and quadrupolar electrostatics without hydrogen bonds. Ammonia adds a hydrogen-bonded molecular environment, while urea combines a polar carbonyl group with a cooperative, multiply connected hydrogen-bond network. The selection spans physically distinct interactions without making a claim to represent the full X23 distribution. Their small cells also permit direct comparison of all-electron and pseudopotential density representations.
+
+\begin{table*}[t]
+\centering
+\caption{Electronic lattice energies in kJ~mol$^{-1}$ per molecule at the supplied geometries, including D3(BJ) for all Skala results. DMC reference values are from Ref.~\citenum{DellaPia2024X23}; parentheses give its statistical uncertainties, not a complete systematic uncertainty. Negative energies denote binding.}
+\label{tab:crystals}
+\begin{tabular}{lrrrrr}
+\toprule
+Crystal & GAPW-XC/GTH & GAPW-AE & GAPW-GTH direct & GAPW-GTH one centre & DMC\\
+\midrule
+CO$_2$ & -37.408 & -36.570 & -37.376 & -37.392 & -29.4(2)\\
+NH$_3$ & -40.074 & -38.744 & -40.094 & -40.076 & -38.2(1)\\
+Urea & -113.725 & -124.637 & -113.805 & -113.719 & -108.5(3)\\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+All twelve native lattice energies are more negative than the corresponding DMC values (Table~\ref{tab:crystals} and Fig.~\ref{fig:crystal-errors}). The three GTH representations agree closely: their largest spread is 0.0853~kJ~mol$^{-1}$, for urea. The one-centre-minus-direct shifts are $-0.0159$, $+0.0182$, and $+0.0853$~kJ~mol$^{-1}$ for CO$_2$, NH$_3$, and urea. Thus the overbinding of the GTH calculations is not removed by switching among these three native density representations.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{crystal-lattice-errors.pdf}
+\caption{Signed Skala--DMC lattice-energy residuals. All representations overbind. The three GTH routes nearly coincide, whereas the AE change is strongly system dependent. DMC statistical uncertainties are shown around zero; they do not include all reference systematic errors.}
+\label{fig:crystal-errors}
+\end{figure}
+
+The all-electron comparison is more strongly system dependent. AE weakens CO$_2$ and NH$_3$ binding relative to GAPW-XC by 0.84 and 1.33~kJ~mol$^{-1}$, respectively, but strengthens urea binding by 10.91~kJ~mol$^{-1}$. Its absolute errors increase from NH$_3$ through CO$_2$ to urea: 0.54, 7.17, and 16.14~kJ~mol$^{-1}$. In the GTH protocols, urea is instead more accurate than CO$_2$. CO$_2$ also has the largest fractional error in every representation, so the AE absolute-error ordering partly reflects the different binding-energy scales.
+
+The different interaction balances provide a plausible physical interpretation. Dispersion-dominated CO$_2$ tests a delicate balance of attractive correlation, quadrupolar electrostatics, and short-range repulsion.\cite{Sharkas2014Crystals} Ammonia contains an N--H$\cdots$N network, while urea combines N--H$\cdots$O contacts with a polar carbonyl/amide framework and cooperative hydrogen bonding.\cite{Morrison2003HydrogenBonds} Earlier correlated calculations also find a larger gas-to-crystal intramolecular deformation contribution for urea.\cite{Sharkas2014Crystals} Environment-dependent polarization, short-range interactions, and deformation can therefore contribute differently to the energy error; a monotonic explanation based only on molecular size or polarizability is insufficient.
+
+These mechanisms suggest an interpretation rather than a decomposition of the Skala error. The small NH$_3$ residual may involve favourable cancellation between crystal and molecular errors. Moreover, AE versus GTH changes the Hamiltonian, basis, and density together, whereas direct versus one-centre GTH isolates the reconstruction choice. The large AE urea shift cannot therefore be attributed uniquely to the one-centre correction or to hydrogen-bond cooperativity.
+
+The representative quadrature, k-point, symmetry, and CPU/GPU controls in the ESI are much smaller than the CO$_2$ reference discrepancy. Together with the agreement among GTH representations, they support a physical-protocol discrepancy rather than the tested integration or device effects. The energies remain finite-basis predictions; a complete-basis and counterpoise-corrected limit is outside the present comparison.
+
+The comparison concerns the combined Skala--D3(BJ) protocol. Since dispersion is retained in every calculation, the residual cannot be uniquely decomposed into learned-XC and empirical-dispersion contributions. DMC provides a directly electronic many-body reference and avoids comparing a static electronic energy with an uncorrected sublimation enthalpy.\cite{DellaPia2024X23,Dolgonos2019X23b}
+
+Published dispersion-inclusive density-functional results provide useful context.\cite{DellaPia2025MLIP} PBE+D3 gives CO$_2$, NH$_3$, and urea lattice energies of $-25.07$, $-43.76$, and $-109.90$~kJ~mol$^{-1}$, respectively, with errors of different signs. The ESI includes additional approximations. Those literature protocols are not same-geometry, same-basis cross-code controls; they show that the Skala trend is not an unavoidable consequence of describing these crystals with density-functional theory.
+
+\subsection{Condensed-phase transfer and the role of many-body data}
+
+The ten-solid structural analysis in the ESI provides complementary context. Every retained native equilibrium lattice constant is shorter than the static-lattice experimental reference, with MAEs of 0.073--0.084~\AA{}. Matched literature comparisons show smaller structural errors for established solid-state approximations and correlated methods.\cite{Goldzak2022Solids,Zhang2018Solids} This systematic contraction is consistent with an overly attractive energy landscape, but an equation of state alone does not measure a cohesive energy. The molecular-crystal lattice energies provide the direct energetic evidence for overbinding in this work.
+
+These results identify transfer from gas-phase molecules to condensed matter as the central physical issue. Skala was developed from molecular reference data rather than periodic-solid densities and energies.\cite{Skala2025} Extended coordination, screening, and cooperative polarization are consequently outside the explicitly sampled training domain. The consistent overbinding and lattice contraction motivate that domain difference as an explanation to test, rather than indicating a need to abandon the native reconstruction. Establishing causality will require controlled changes to the training data and numerical protocol. More generally, a transferable approximation must learn the collective response of condensed matter as well as interactions among gas-phase molecules.
+
+Periodic many-body calculations provide a concrete route to the necessary reference information. Booth, Gr\"uneis, Kresse, and Alavi demonstrated highly accurate wave-function treatments of real solids.\cite{Booth2013} Developments underlying CC4S make periodic coupled-cluster calculations increasingly accessible,\cite{Hummel2017,Gruber2018,CC4S} and their use in machine-learned condensed-phase simulations is already practical.\cite{Herzog2024PeriodicCC} Azadi, Booth, and K\"uhne combined periodic coupled cluster, diffusion Monte Carlo, and full configuration-interaction quantum Monte Carlo for the equation of state of atomic solid hydrogen.\cite{Azadi2020Hydrogen} Such complementary methods allow basis and finite-size errors to be assessed independently of a density-functional approximation.
+
+Quantum Monte Carlo offers flexible many-electron descriptions through neural-network trial states,\cite{Kessler2021,Kessler2026} antisymmetric shadow wavefunctions for solid hydrogen,\cite{Calcavecchia2018} and resonating-valence-bond approaches in TurboRVB.\cite{Nakano2020TurboRVB} Applications with Azadi span molecular ozone and correlated kagome systems, illustrating the reach from gas-phase to condensed-phase electronic structure.\cite{Azadi2015Ozone,Azadi2025Kagome} These methods are prospective sources of training and validation data, not ready-made Skala training sets. The relevant programme requires consistently converged energies and density information across volumes, coordination environments, and distortions, together with self-consistent stability checks. The native implementation provides the computational framework in which that programme can be carried out.
+
+\section{Conclusions}
+
+The joint one-centre reconstruction brings learned nonlocal XC into CP2K's native GPW/GAPW framework without GauXC. Reconstructing density, gradients, and kinetic-energy density before evaluation preserves the mixed terms and nonlocal couplings required by GAPW-XC, GAPW-AE, and augmented GAPW-GTH/ECP. GAPW-XC is the recommended default starting representation for pseudopotential calculations because local XC structure is resolved independently of the global plane-wave cutoff. The same variational construction connects the functional to CP2K's forces, stress, k-point sampling, and point-group reduction, and to its boundary-condition framework for systems of different dimensionality. The present validation covers molecules and three-dimensional crystals.
+
+The molecular results retain Skala's high typical accuracy, with median reaction-energy errors near 0.55--0.60~kcal~mol$^{-1}$. On the matched molecular intersection, native and GauXC calculations reach comparable benchmark accuracy. Together with the earlier matched GauXC/PySCF study, this establishes continuity between the native method and the molecular implementations, while keeping the effects of basis and core treatment explicit.
+
+Condensed phases expose a different challenge. CO$_2$, NH$_3$, and urea are overbound by the tested Skala--D3(BJ) protocol, and the complementary ten-solid analysis shows systematic lattice contraction. Numerical validation supports the native implementation, whereas the collective environments responsible for condensed-phase binding were not explicitly represented in Skala's molecular training domain. This makes training-domain extension a physically motivated direction, rather than assuming that accurate molecular predictions alone guarantee accurate materials properties.
+
+Periodic coupled-cluster and quantum Monte Carlo calculations, including stochastic full configuration interaction where feasible, offer a route to the required many-body reference data. Condensed-phase accuracy must be learned and tested in condensed-phase environments. The native GPW/GAPW implementation makes that development possible within the electronic-structure framework in which the resulting functional will ultimately be applied.
+
+\section*{Conflicts of interest}
+% AUTHOR CONFIRMATION REQUIRED: no conflict declaration was present in the synchronized source.
+The authors' conflict-of-interest declaration is awaiting confirmation.
+
+\section*{Data availability}
+The supporting reaction energies, crystal and molecular energies, equation-of-state data, and numerical controls are included in the ESI. Geometries, executed input files, analysis scripts, and source-version metadata are collected in the native-grid Skala benchmark repository at \url{https://github.com/DCM-Uni-Paderborn/native-grid-skala-benchmarks}. The ESI identifies the molecular, molecular-crystal, and ten-solid datasets separately. A versioned public release of the complete article dataset will accompany submission.
+
+\section*{Acknowledgements}
+The authors thank the AI for Science team at Microsoft Research for valuable discussions and the CP2K and GauXC development communities. Part of the research was funded by the German Research Foundation (DFG), project numbers 417590517/Collaborative Research Centre 1415 and 519869949. OpenAI tools assisted with language editing, literature organization, and document preparation. Responsibility for the scientific content remains with the authors.
+
+\bibliographystyle{rsc}
+\bibliography{references,pccp-references,x23-references}
+\end{document}

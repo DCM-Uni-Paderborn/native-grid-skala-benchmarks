@@ -1,0 +1,2515 @@
+ DBCSR| CPU Multiplication driver                                           XSMM (U)
+ DBCSR| Multrec recursion limit                                              512 (U)
+ DBCSR| Multiplication stack size                                           1000 (D)
+ DBCSR| Maximum elements for images                                    UNLIMITED (U)
+ DBCSR| Multiplicative factor virtual images                                   1 (U)
+ DBCSR| Use multiplication densification                                       T (D)
+ DBCSR| Multiplication size stacks                                             3 (U)
+ DBCSR| Use memory pool for CPU allocation                                     F (U)
+ DBCSR| Number of 3D layers                                               SINGLE (U)
+ DBCSR| Use MPI memory allocation                                              F (U)
+ DBCSR| Use RMA algorithm                                                      F (U)
+ DBCSR| Use Communication thread                                               T (U)
+ DBCSR| Communication thread load                                             15 (D)
+ DBCSR| MPI: My process id                                                     0
+ DBCSR| MPI: Number of processes                                               1
+ DBCSR| OMP: Current number of threads                                        20
+ DBCSR| OMP: Max number of threads                                            20
+ DBCSR| Split modifier for TAS multiplication algorithm                  1.0E+00 (U)
+
+
+  **** **** ******  **  PROGRAM STARTED AT               2026-08-26 05:50:33.110
+ ***** ** ***  *** **   PROGRAM STARTED ON                            spark-c86c
+ **    ****   ******    PROGRAM STARTED BY                              kuehne88
+ ***** **    ** ** **   PROGRAM PROCESS ID                               2031505
+  **** **  *******  **  PROGRAM STARTED IN /home/kuehne88/work/native-skala-spar
+                                           k/diet-production-p25/gapwxc-gth-one-
+                                           center/e36a8c19b3b46e20ed0aa0ce55ea23
+                                           2d3effff75
+
+ CP2K| version string:                 CP2K version 2026.2 (Development Version)
+ CP2K| source code revision number:                                   c1bff3eeb8
+ CP2K| cp2kflags: omp fftw3 parallel scalapack spglib openblas libtorch libtorch
+ CP2K|            _cuda
+ CP2K| is freely available from                            https://www.cp2k.org/
+ CP2K| Program compiled at                                   2026-08-23 22:42:03
+ CP2K| Program compiled on                                            spark-c86c
+ CP2K| Program compiled for                                              aarch64
+ CP2K| Data directory path      /home/kuehne88/work/native-skala-spark/cp2k/data
+ CP2K| Input file name                                                 input.inp
+
+ GLOBAL| Force Environment number                                              1
+ GLOBAL| Basis set file name                             BASIS_MOLOPT_UZH_2026.2
+ GLOBAL| Potential file name                                POTENTIAL_UZH_2026.2
+ GLOBAL| MM Potential file name                                     MM_POTENTIAL
+ GLOBAL| Coordinate file name                                      __STD_INPUT__
+ GLOBAL| Method name                                                        CP2K
+ GLOBAL| Project name                                e36a8c19b3b4_gapwxc_gth_paw
+ GLOBAL| Run type                                                         ENERGY
+ GLOBAL| FFT library                                                       FFTW3
+ GLOBAL| Diagonalization library                                       ScaLAPACK
+ GLOBAL| Cholesky decomposition library                                ScaLAPACK
+ GLOBAL| DGEMM library                                                      BLAS
+ GLOBAL| Direct generalized diagonalization requested                          F
+ GLOBAL| Orthonormality check for eigenvectors                          DISABLED
+ GLOBAL| Matrix multiplication library                                 ScaLAPACK
+ GLOBAL| All-to-all communication in single precision                          F
+ GLOBAL| FFTs using library dependent lengths                                  F
+ GLOBAL| Grid backend                                                       AUTO
+ GLOBAL| Global print level                                               MEDIUM
+ GLOBAL| MPI I/O enabled                                                       T
+ GLOBAL| Total number of message passing processes                             1
+ GLOBAL| Number of distributed systems (nodes)                                 1
+ GLOBAL| Number of threads for this process                                   20
+ GLOBAL| This output is from process                                           0
+ GLOBAL| OpenMP stack size per thread (OMP_STACKSIZE)                       512M
+ GLOBAL| CPU model name                                                  UNKNOWN
+ GLOBAL| CPUID                                                              2000
+
+ MEMORY| system memory details [Kb]
+ MEMORY|                        rank 0           min           max       average
+ MEMORY| MemTotal            125507828     125507828     125507828     125507828
+ MEMORY| MemFree              93571284      93571284      93571284      93571284
+ MEMORY| Buffers               4019984       4019984       4019984       4019984
+ MEMORY| Cached               14948904      14948904      14948904      14948904
+ MEMORY| Slab                  6065368       6065368       6065368       6065368
+ MEMORY| SReclaimable          5106312       5106312       5106312       5106312
+ MEMORY| MemLikelyFree       117646484     117646484     117646484     117646484
+
+
+ *** Fundamental physical constants (SI units) ***
+
+ *** Literature: B. J. Mohr and B. N. Taylor,
+ ***             CODATA recommended values of the fundamental physical
+ ***             constants: 2006, Web Version 5.1
+ ***             http://physics.nist.gov/constants
+
+ Speed of light in vacuum [m/s]                             2.99792458000000E+08
+ Magnetic constant or permeability of vacuum [N/A**2]       1.25663706143592E-06
+ Electric constant or permittivity of vacuum [F/m]          8.85418781762039E-12
+ Planck constant (h) [J*s]                                  6.62606896000000E-34
+ Planck constant (h-bar) [J*s]                              1.05457162825177E-34
+ Elementary charge [C]                                      1.60217648700000E-19
+ Electron mass [kg]                                         9.10938215000000E-31
+ Electron g factor [ ]                                     -2.00231930436220E+00
+ Proton mass [kg]                                           1.67262163700000E-27
+ Fine-structure constant                                    7.29735253760000E-03
+ Rydberg constant [1/m]                                     1.09737315685270E+07
+ Avogadro constant [1/mol]                                  6.02214179000000E+23
+ Boltzmann constant [J/K]                                   1.38065040000000E-23
+ Atomic mass unit [kg]                                      1.66053878200000E-27
+ Bohr radius [m]                                            5.29177208590000E-11
+
+ *** Conversion factors ***
+
+ [u] -> [a.u.]                                              1.82288848426455E+03
+ [Angstrom] -> [Bohr] = [a.u.]                              1.88972613288564E+00
+ [a.u.] = [Bohr] -> [Angstrom]                              5.29177208590000E-01
+ [a.u.] -> [s]                                              2.41888432650478E-17
+ [a.u.] -> [fs]                                             2.41888432650478E-02
+ [a.u.] -> [J]                                              4.35974393937059E-18
+ [a.u.] -> [N]                                              8.23872205491840E-08
+ [a.u.] -> [K]                                              3.15774647902944E+05
+ [a.u.] -> [kJ/mol]                                         2.62549961709828E+03
+ [a.u.] -> [kcal/mol]                                       6.27509468713739E+02
+ [a.u.] -> [Pa]                                             2.94210107994716E+13
+ [a.u.] -> [bar]                                            2.94210107994716E+08
+ [a.u.] -> [atm]                                            2.90362800883016E+08
+ [a.u.] -> [eV]                                             2.72113838565563E+01
+ [a.u.] -> [Hz]                                             6.57968392072181E+15
+ [a.u.] -> [1/cm] (wave numbers)                            2.19474631370540E+05
+ [a.u./Bohr**2] -> [1/cm]                                   5.14048714338585E+03
+ 
+
+ CELL| Volume [angstrom^3]:                                         26071.000000
+ CELL| Vector a [angstrom]:      31.000     0.000     0.000   |a| =    31.000000
+ CELL| Vector b [angstrom]:       0.000    29.000     0.000   |b| =    29.000000
+ CELL| Vector c [angstrom]:       0.000     0.000    29.000   |c| =    29.000000
+ CELL| Angle (b,c), alpha [degree]:                                    90.000000
+ CELL| Angle (a,c), beta  [degree]:                                    90.000000
+ CELL| Angle (a,b), gamma [degree]:                                    90.000000
+ CELL| Numerically orthorhombic:                                             YES
+ CELL| Periodicity                                                          NONE
+
+ CELL_REF| Volume [angstrom^3]:                                     26071.000000
+ CELL_REF| Vector a [angstrom    31.000     0.000     0.000   |a| =    31.000000
+ CELL_REF| Vector b [angstrom     0.000    29.000     0.000   |b| =    29.000000
+ CELL_REF| Vector c [angstrom     0.000     0.000    29.000   |c| =    29.000000
+ CELL_REF| Angle (b,c), alpha [degree]:                                90.000000
+ CELL_REF| Angle (a,c), beta  [degree]:                                90.000000
+ CELL_REF| Angle (a,b), gamma [degree]:                                90.000000
+ CELL_REF| Numerically orthorhombic:                                         YES
+ CELL_REF| Periodicity                                                      NONE
+
+ GENERATE|  Preliminary Number of Bonds generated:                             0
+ GENERATE|  Achieved consistency in connectivity generation.
+
+ *******************************************************************************
+ *******************************************************************************
+ **                                                                           **
+ **     #####                         ##              ##                      **
+ **    ##   ##            ##          ##              ##                      **
+ **   ##     ##                       ##            ######                    **
+ **   ##     ##  ##   ##  ##   #####  ##  ##   ####   ##    #####    #####    **
+ **   ##     ##  ##   ##  ##  ##      ## ##   ##      ##   ##   ##  ##   ##   **
+ **   ##  ## ##  ##   ##  ##  ##      ####     ###    ##   ######   ######    **
+ **    ##  ###   ##   ##  ##  ##      ## ##      ##   ##   ##       ##        **
+ **     #######   #####   ##   #####  ##  ##  ####    ##    #####   ##        **
+ **           ##                                                    ##        **
+ **                                                                           **
+ **                                                ... make the atoms dance   **
+ **                                                                           **
+ **            Copyright (C) by CP2K developers group (2000-2026)             **
+ **                      J. Chem. Phys. 152, 194103 (2020)                    **
+ **                                                                           **
+ *******************************************************************************
+
+ DFT| Spin restricted Kohn-Sham (RKS) calculation                            RKS
+ DFT| Multiplicity                                                             1
+ DFT| Number of spin states                                                    1
+ DFT| Charge                                                                   0
+ DFT| Self-interaction correction (SIC)                                       NO
+ DFT| Cutoffs: density                                              1.000000E-10
+ DFT|          gradient                                             1.000000E-10
+ DFT|          tau                                                  1.000000E-10
+ DFT|          cutoff_smoothing_range                               0.000000E+00
+ DFT| XC density smoothing                                                  NONE
+ DFT| XC derivatives                                                          PW
+
+ FUNCTIONAL| GAUXC:
+ FUNCTIONAL| Functional computed by GauXC Skala model SKALA                     
+
+ vdW POTENTIAL|                                                   Pair Potential
+ vdW POTENTIAL|          DFT-D3 (Version 3.1)
+ vdW POTENTIAL|          Potential Form: S. Grimme et al, JCP 132: 154104 (2010)
+ vdW POTENTIAL|          BJ Damping: S. Grimme et al, JCC 32: 1456 (2011)
+ vdW POTENTIAL|          Cutoff Radius [Bohr]:                             37.79
+ vdW POTENTIAL|          s6 Scaling Factor:                               1.0000
+ vdW POTENTIAL|          a1 Damping Factor:                               0.3981
+ vdW POTENTIAL|          s8 Scaling Factor:                               1.9889
+ vdW POTENTIAL|          a2 Damping Factor:                               4.4211
+ vdW POTENTIAL|          Cutoff for CN calculation:                   0.1000E-05
+
+ QS| Method:                                                             GAPW_XC
+ QS| Density plane wave grid type                        NON-SPHERICAL FULLSPACE
+ QS| Number of grid levels:                                                    5
+ QS| Density cutoff [a.u.]:                                                200.0
+ QS| Multi grid cutoff [a.u.]: 1) grid level                               200.0
+ QS|                           2) grid level                                66.7
+ QS|                           3) grid level                                22.2
+ QS|                           4) grid level                                 7.4
+ QS|                           5) grid level                                 2.5
+ QS| Grid level progression factor:                                          3.0
+ QS| Relative density cutoff [a.u.]:                                        30.0
+ QS| Interaction thresholds: eps_pgf_orb:                                1.0E-06
+ QS|                         eps_filter_matrix:                          0.0E+00
+ QS|                         eps_core_charge:                            1.0E-14
+ QS|                         eps_rho_gspace:                             1.0E-12
+ QS|                         eps_rho_rspace:                             1.0E-12
+ QS|                         eps_gvg_rspace:                             1.0E-06
+ QS|                         eps_ppl:                                    1.0E-02
+ QS|                         eps_ppnl:                                   1.0E-08
+ QS| GAPW_XC|      One center basis extended with primitives (small:s)
+ QS| GAPW_XC|                eps_fit:                                    1.0E-04
+ QS| GAPW_XC|                eps_iso:                                    1.0E-12
+ QS| GAPW_XC|                eps_svd:                                    1.0E-08
+ QS| GAPW_XC|atom-r-grid: quadrature:                 GC_LOG                        
+ QS| GAPW_XC|   atom-s-grid:  max l :                                          6
+
+
+ ATOMIC KIND INFORMATION
+
+  1. Atomic kind: O                                     Number of atoms:       7
+
+     Orbital Basis Set                                   TZV2P-MOLOPT-PBE-GTH-q6
+
+       Number of orbital shell sets:                                           1
+       Number of orbital shells:                                               9
+       Number of primitive Cartesian functions:                                5
+       Number of Cartesian basis functions:                                   34
+       Number of spherical basis functions:                                   29
+       Norm type:                                                              2
+
+       Normalised Cartesian orbitals:
+
+                        Set   Shell   Orbital            Exponent    Coefficient
+
+                          1       1    2s               10.277042      -0.485504
+                                                         3.564053      -0.220015
+                                                         1.313636       0.373321
+                                                         0.488903       0.264765
+                                                         0.155332       0.020043
+
+                          1       2    3s               10.277042       0.224066
+                                                         3.564053       0.080746
+                                                         1.313636      -0.123482
+                                                         0.488903      -0.035459
+                                                         0.155332       0.195554
+
+                          1       3    4s               10.277042      -3.846583
+                                                         3.564053      -0.604002
+                                                         1.313636       0.878850
+                                                         0.488903      -0.388670
+                                                         0.155332       0.020403
+
+                          1       4    3px              10.277042      -1.528218
+                                                         3.564053      -1.277699
+                                                         1.313636      -0.654740
+                                                         0.488903      -0.229926
+                                                         0.155332      -0.043447
+                          1       4    3py              10.277042      -1.528218
+                                                         3.564053      -1.277699
+                                                         1.313636      -0.654740
+                                                         0.488903      -0.229926
+                                                         0.155332      -0.043447
+                          1       4    3pz              10.277042      -1.528218
+                                                         3.564053      -1.277699
+                                                         1.313636      -0.654740
+                                                         0.488903      -0.229926
+                                                         0.155332      -0.043447
+
+                          1       5    4px              10.277042       2.036465
+                                                         3.564053       1.678955
+                                                         1.313636       0.821025
+                                                         0.488903       0.173956
+                                                         0.155332      -0.133459
+                          1       5    4py              10.277042       2.036465
+                                                         3.564053       1.678955
+                                                         1.313636       0.821025
+                                                         0.488903       0.173956
+                                                         0.155332      -0.133459
+                          1       5    4pz              10.277042       2.036465
+                                                         3.564053       1.678955
+                                                         1.313636       0.821025
+                                                         0.488903       0.173956
+                                                         0.155332      -0.133459
+
+                          1       6    5px              10.277042       4.160760
+                                                         3.564053       3.839534
+                                                         1.313636       1.365137
+                                                         0.488903      -0.557232
+                                                         0.155332       0.019989
+                          1       6    5py              10.277042       4.160760
+                                                         3.564053       3.839534
+                                                         1.313636       1.365137
+                                                         0.488903      -0.557232
+                                                         0.155332       0.019989
+                          1       6    5pz              10.277042       4.160760
+                                                         3.564053       3.839534
+                                                         1.313636       1.365137
+                                                         0.488903      -0.557232
+                                                         0.155332       0.019989
+
+                          1       7    4dx2             10.277042      -5.653729
+                                                         3.564053       2.384130
+                                                         1.313636       0.763128
+                                                         0.488903       0.368121
+                                                         0.155332      -0.007951
+                          1       7    4dxy             10.277042      -9.792547
+                                                         3.564053       4.129435
+                                                         1.313636       1.321776
+                                                         0.488903       0.637605
+                                                         0.155332      -0.013772
+                          1       7    4dxz             10.277042      -9.792547
+                                                         3.564053       4.129435
+                                                         1.313636       1.321776
+                                                         0.488903       0.637605
+                                                         0.155332      -0.013772
+                          1       7    4dy2             10.277042      -5.653729
+                                                         3.564053       2.384130
+                                                         1.313636       0.763128
+                                                         0.488903       0.368121
+                                                         0.155332      -0.007951
+                          1       7    4dyz             10.277042      -9.792547
+                                                         3.564053       4.129435
+                                                         1.313636       1.321776
+                                                         0.488903       0.637605
+                                                         0.155332      -0.013772
+                          1       7    4dz2             10.277042      -5.653729
+                                                         3.564053       2.384130
+                                                         1.313636       0.763128
+                                                         0.488903       0.368121
+                                                         0.155332      -0.007951
+
+                          1       8    5dx2             10.277042      -1.240143
+                                                         3.564053       0.370203
+                                                         1.313636       0.144297
+                                                         0.488903       0.056503
+                                                         0.155332       0.057456
+                          1       8    5dxy             10.277042      -2.147990
+                                                         3.564053       0.641211
+                                                         1.313636       0.249929
+                                                         0.488903       0.097865
+                                                         0.155332       0.099516
+                          1       8    5dxz             10.277042      -2.147990
+                                                         3.564053       0.641211
+                                                         1.313636       0.249929
+                                                         0.488903       0.097865
+                                                         0.155332       0.099516
+                          1       8    5dy2             10.277042      -1.240143
+                                                         3.564053       0.370203
+                                                         1.313636       0.144297
+                                                         0.488903       0.056503
+                                                         0.155332       0.057456
+                          1       8    5dyz             10.277042      -2.147990
+                                                         3.564053       0.641211
+                                                         1.313636       0.249929
+                                                         0.488903       0.097865
+                                                         0.155332       0.099516
+                          1       8    5dz2             10.277042      -1.240143
+                                                         3.564053       0.370203
+                                                         1.313636       0.144297
+                                                         0.488903       0.056503
+                                                         0.155332       0.057456
+
+                          1       9    5fx3             10.277042      -6.690350
+                                                         3.564053       0.340627
+                                                         1.313636       0.043047
+                                                         0.488903       0.291962
+                                                         0.155332      -0.000154
+                          1       9    5fx2y            10.277042     -14.960077
+                                                         3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fx2z            10.277042     -14.960077
+                                                         3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fxy2            10.277042     -14.960077
+                                                         3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fxyz            10.277042     -25.911613
+                                                         3.564053       1.319241
+                                                         1.313636       0.166721
+                                                         0.488903       1.130766
+                                                         0.155332      -0.000597
+                          1       9    5fxz2            10.277042     -14.960077
+                                                         3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fy3             10.277042      -6.690350
+                                                         3.564053       0.340627
+                                                         1.313636       0.043047
+                                                         0.488903       0.291962
+                                                         0.155332      -0.000154
+                          1       9    5fy2z            10.277042     -14.960077
+                                                         3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fyz2            10.277042     -14.960077
+                                                         3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fz3             10.277042      -6.690350
+                                                         3.564053       0.340627
+                                                         1.313636       0.043047
+                                                         0.488903       0.291962
+                                                         0.155332      -0.000154
+
+       Atomic covalent radius [Angstrom]:                                  0.730
+
+       Atomic van der Waals radius [Angstrom]:                             1.520
+
+     The atoms of this atomic kind are PAW atoms (GAPW):
+       Hard Gaussian function radius:                                      1.400
+       Rho0 radius:                                                        1.400
+       Maximum GTO radius used for PAW projector construction:            24.566
+
+     GAPW Soft Basis Set                            TZV2P-MOLOPT-PBE-GTH-q6_soft
+
+       Number of orbital shell sets:                                           1
+       Number of orbital shells:                                               9
+       Number of primitive Cartesian functions:                                4
+       Number of Cartesian basis functions:                                   34
+       Number of spherical basis functions:                                   29
+       Norm type:                                                              2
+
+       Normalised Cartesian orbitals:
+
+                        Set   Shell   Orbital            Exponent    Coefficient
+
+                          1       1    2s                3.564053      -0.220015
+                                                         1.313636       0.373321
+                                                         0.488903       0.264765
+                                                         0.155332       0.020043
+
+                          1       2    3s                3.564053       0.080746
+                                                         1.313636      -0.123482
+                                                         0.488903      -0.035459
+                                                         0.155332       0.195554
+
+                          1       3    4s                3.564053      -0.604002
+                                                         1.313636       0.878850
+                                                         0.488903      -0.388670
+                                                         0.155332       0.020403
+
+                          1       4    3px               3.564053      -1.277699
+                                                         1.313636      -0.654740
+                                                         0.488903      -0.229926
+                                                         0.155332      -0.043447
+                          1       4    3py               3.564053      -1.277699
+                                                         1.313636      -0.654740
+                                                         0.488903      -0.229926
+                                                         0.155332      -0.043447
+                          1       4    3pz               3.564053      -1.277699
+                                                         1.313636      -0.654740
+                                                         0.488903      -0.229926
+                                                         0.155332      -0.043447
+
+                          1       5    4px               3.564053       1.678955
+                                                         1.313636       0.821025
+                                                         0.488903       0.173956
+                                                         0.155332      -0.133459
+                          1       5    4py               3.564053       1.678955
+                                                         1.313636       0.821025
+                                                         0.488903       0.173956
+                                                         0.155332      -0.133459
+                          1       5    4pz               3.564053       1.678955
+                                                         1.313636       0.821025
+                                                         0.488903       0.173956
+                                                         0.155332      -0.133459
+
+                          1       6    5px               3.564053       3.839534
+                                                         1.313636       1.365137
+                                                         0.488903      -0.557232
+                                                         0.155332       0.019989
+                          1       6    5py               3.564053       3.839534
+                                                         1.313636       1.365137
+                                                         0.488903      -0.557232
+                                                         0.155332       0.019989
+                          1       6    5pz               3.564053       3.839534
+                                                         1.313636       1.365137
+                                                         0.488903      -0.557232
+                                                         0.155332       0.019989
+
+                          1       7    4dx2              3.564053       2.384130
+                                                         1.313636       0.763128
+                                                         0.488903       0.368121
+                                                         0.155332      -0.007951
+                          1       7    4dxy              3.564053       4.129435
+                                                         1.313636       1.321776
+                                                         0.488903       0.637605
+                                                         0.155332      -0.013772
+                          1       7    4dxz              3.564053       4.129435
+                                                         1.313636       1.321776
+                                                         0.488903       0.637605
+                                                         0.155332      -0.013772
+                          1       7    4dy2              3.564053       2.384130
+                                                         1.313636       0.763128
+                                                         0.488903       0.368121
+                                                         0.155332      -0.007951
+                          1       7    4dyz              3.564053       4.129435
+                                                         1.313636       1.321776
+                                                         0.488903       0.637605
+                                                         0.155332      -0.013772
+                          1       7    4dz2              3.564053       2.384130
+                                                         1.313636       0.763128
+                                                         0.488903       0.368121
+                                                         0.155332      -0.007951
+
+                          1       8    5dx2              3.564053       0.370203
+                                                         1.313636       0.144297
+                                                         0.488903       0.056503
+                                                         0.155332       0.057456
+                          1       8    5dxy              3.564053       0.641211
+                                                         1.313636       0.249929
+                                                         0.488903       0.097865
+                                                         0.155332       0.099516
+                          1       8    5dxz              3.564053       0.641211
+                                                         1.313636       0.249929
+                                                         0.488903       0.097865
+                                                         0.155332       0.099516
+                          1       8    5dy2              3.564053       0.370203
+                                                         1.313636       0.144297
+                                                         0.488903       0.056503
+                                                         0.155332       0.057456
+                          1       8    5dyz              3.564053       0.641211
+                                                         1.313636       0.249929
+                                                         0.488903       0.097865
+                                                         0.155332       0.099516
+                          1       8    5dz2              3.564053       0.370203
+                                                         1.313636       0.144297
+                                                         0.488903       0.056503
+                                                         0.155332       0.057456
+
+                          1       9    5fx3              3.564053       0.340627
+                                                         1.313636       0.043047
+                                                         0.488903       0.291962
+                                                         0.155332      -0.000154
+                          1       9    5fx2y             3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fx2z             3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fxy2             3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fxyz             3.564053       1.319241
+                                                         1.313636       0.166721
+                                                         0.488903       1.130766
+                                                         0.155332      -0.000597
+                          1       9    5fxz2             3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fy3              3.564053       0.340627
+                                                         1.313636       0.043047
+                                                         0.488903       0.291962
+                                                         0.155332      -0.000154
+                          1       9    5fy2z             3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fyz2             3.564053       0.761664
+                                                         1.313636       0.096256
+                                                         0.488903       0.652848
+                                                         0.155332      -0.000345
+                          1       9    5fz3              3.564053       0.340627
+                                                         1.313636       0.043047
+                                                         0.488903       0.291962
+                                                         0.155332      -0.000154
+
+     GTH Potential information for                                    GTH-PBE-q6
+
+       Description:                       Goedecker-Teter-Hutter pseudopotential
+                                           Goedecker et al., PRB 54, 1703 (1996)
+                                          Hartwigsen et al., PRB 58, 3641 (1998)
+                                                      Krack, TCA 114, 145 (2005)
+
+       Gaussian exponent of the core charge distribution:               8.366479
+       Electronic configuration (s p d ...):                       2   4   0   0
+
+       Parameters of the local part of the GTH pseudopotential:
+
+                          rloc        C1          C2          C3          C4
+                        0.244463  -16.675482    2.489086
+
+       Parameters of the non-local part of the GTH pseudopotential:
+
+                   l      r(l)      h(i,j,l)
+
+                   0    0.220971   18.334469
+
+  2. Atomic kind: P                                     Number of atoms:       2
+
+     Orbital Basis Set                                   TZV2P-MOLOPT-PBE-GTH-q5
+
+       Number of orbital shell sets:                                           1
+       Number of orbital shells:                                               9
+       Number of primitive Cartesian functions:                                4
+       Number of Cartesian basis functions:                                   34
+       Number of spherical basis functions:                                   29
+       Norm type:                                                              2
+
+       Normalised Cartesian orbitals:
+
+                        Set   Shell   Orbital            Exponent    Coefficient
+
+                          1       1    2s                1.529974       0.330831
+                                                         0.572156      -0.121865
+                                                         0.221473      -0.178453
+                                                         0.075885      -0.020408
+
+                          1       2    3s                1.529974       0.353664
+                                                         0.572156      -0.203423
+                                                         0.221473       0.005821
+                                                         0.075885       0.111796
+
+                          1       3    4s                1.529974      -1.067157
+                                                         0.572156       0.214068
+                                                         0.221473      -0.177211
+                                                         0.075885       0.057956
+
+                          1       4    3px               1.529974       0.268378
+                                                         0.572156      -0.381409
+                                                         0.221473      -0.118831
+                                                         0.075885      -0.003877
+                          1       4    3py               1.529974       0.268378
+                                                         0.572156      -0.381409
+                                                         0.221473      -0.118831
+                                                         0.075885      -0.003877
+                          1       4    3pz               1.529974       0.268378
+                                                         0.572156      -0.381409
+                                                         0.221473      -0.118831
+                                                         0.075885      -0.003877
+
+                          1       5    4px               1.529974       0.260904
+                                                         0.572156      -0.330883
+                                                         0.221473       0.080611
+                                                         0.075885       0.048633
+                          1       5    4py               1.529974       0.260904
+                                                         0.572156      -0.330883
+                                                         0.221473       0.080611
+                                                         0.075885       0.048633
+                          1       5    4pz               1.529974       0.260904
+                                                         0.572156      -0.330883
+                                                         0.221473       0.080611
+                                                         0.075885       0.048633
+
+                          1       6    5px               1.529974       0.623329
+                                                         0.572156       0.730611
+                                                         0.221473      -0.234303
+                                                         0.075885       0.056701
+                          1       6    5py               1.529974       0.623329
+                                                         0.572156       0.730611
+                                                         0.221473      -0.234303
+                                                         0.075885       0.056701
+                          1       6    5pz               1.529974       0.623329
+                                                         0.572156       0.730611
+                                                         0.221473      -0.234303
+                                                         0.075885       0.056701
+
+                          1       7    4dx2              1.529974       0.641565
+                                                         0.572156       0.349115
+                                                         0.221473       0.047365
+                                                         0.075885       0.000033
+                          1       7    4dxy              1.529974       1.111223
+                                                         0.572156       0.604685
+                                                         0.221473       0.082039
+                                                         0.075885       0.000058
+                          1       7    4dxz              1.529974       1.111223
+                                                         0.572156       0.604685
+                                                         0.221473       0.082039
+                                                         0.075885       0.000058
+                          1       7    4dy2              1.529974       0.641565
+                                                         0.572156       0.349115
+                                                         0.221473       0.047365
+                                                         0.075885       0.000033
+                          1       7    4dyz              1.529974       1.111223
+                                                         0.572156       0.604685
+                                                         0.221473       0.082039
+                                                         0.075885       0.000058
+                          1       7    4dz2              1.529974       0.641565
+                                                         0.572156       0.349115
+                                                         0.221473       0.047365
+                                                         0.075885       0.000033
+
+                          1       8    5dx2              1.529974      -0.416790
+                                                         0.572156       0.702038
+                                                         0.221473      -0.180280
+                                                         0.075885       0.002500
+                          1       8    5dxy              1.529974      -0.721901
+                                                         0.572156       1.215965
+                                                         0.221473      -0.312254
+                                                         0.075885       0.004331
+                          1       8    5dxz              1.529974      -0.721901
+                                                         0.572156       1.215965
+                                                         0.221473      -0.312254
+                                                         0.075885       0.004331
+                          1       8    5dy2              1.529974      -0.416790
+                                                         0.572156       0.702038
+                                                         0.221473      -0.180280
+                                                         0.075885       0.002500
+                          1       8    5dyz              1.529974      -0.721901
+                                                         0.572156       1.215965
+                                                         0.221473      -0.312254
+                                                         0.075885       0.004331
+                          1       8    5dz2              1.529974      -0.416790
+                                                         0.572156       0.702038
+                                                         0.221473      -0.180280
+                                                         0.075885       0.002500
+
+                          1       9    5fx3              1.529974       0.452264
+                                                         0.572156       0.259688
+                                                         0.221473       0.022786
+                                                         0.075885      -0.000501
+                          1       9    5fx2y             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fx2z             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fxy2             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fxyz             1.529974       1.751610
+                                                         0.572156       1.005767
+                                                         0.221473       0.088251
+                                                         0.075885      -0.001939
+                          1       9    5fxz2             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fy3              1.529974       0.452264
+                                                         0.572156       0.259688
+                                                         0.221473       0.022786
+                                                         0.075885      -0.000501
+                          1       9    5fy2z             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fyz2             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fz3              1.529974       0.452264
+                                                         0.572156       0.259688
+                                                         0.221473       0.022786
+                                                         0.075885      -0.000501
+
+       Atomic covalent radius [Angstrom]:                                  1.060
+
+       Atomic van der Waals radius [Angstrom]:                             1.800
+
+     The atoms of this atomic kind are PAW atoms (GAPW):
+       Hard Gaussian function radius:                                      1.800
+       Rho0 radius:                                                        1.800
+       Maximum GTO radius used for PAW projector construction:            24.566
+
+     GAPW Soft Basis Set                            TZV2P-MOLOPT-PBE-GTH-q5_soft
+
+       Number of orbital shell sets:                                           1
+       Number of orbital shells:                                               9
+       Number of primitive Cartesian functions:                                4
+       Number of Cartesian basis functions:                                   34
+       Number of spherical basis functions:                                   29
+       Norm type:                                                              2
+
+       Normalised Cartesian orbitals:
+
+                        Set   Shell   Orbital            Exponent    Coefficient
+
+                          1       1    2s                1.529974       0.330831
+                                                         0.572156      -0.121865
+                                                         0.221473      -0.178453
+                                                         0.075885      -0.020408
+
+                          1       2    3s                1.529974       0.353664
+                                                         0.572156      -0.203423
+                                                         0.221473       0.005821
+                                                         0.075885       0.111796
+
+                          1       3    4s                1.529974      -1.067157
+                                                         0.572156       0.214068
+                                                         0.221473      -0.177211
+                                                         0.075885       0.057956
+
+                          1       4    3px               1.529974       0.268378
+                                                         0.572156      -0.381409
+                                                         0.221473      -0.118831
+                                                         0.075885      -0.003877
+                          1       4    3py               1.529974       0.268378
+                                                         0.572156      -0.381409
+                                                         0.221473      -0.118831
+                                                         0.075885      -0.003877
+                          1       4    3pz               1.529974       0.268378
+                                                         0.572156      -0.381409
+                                                         0.221473      -0.118831
+                                                         0.075885      -0.003877
+
+                          1       5    4px               1.529974       0.260904
+                                                         0.572156      -0.330883
+                                                         0.221473       0.080611
+                                                         0.075885       0.048633
+                          1       5    4py               1.529974       0.260904
+                                                         0.572156      -0.330883
+                                                         0.221473       0.080611
+                                                         0.075885       0.048633
+                          1       5    4pz               1.529974       0.260904
+                                                         0.572156      -0.330883
+                                                         0.221473       0.080611
+                                                         0.075885       0.048633
+
+                          1       6    5px               1.529974       0.623329
+                                                         0.572156       0.730611
+                                                         0.221473      -0.234303
+                                                         0.075885       0.056701
+                          1       6    5py               1.529974       0.623329
+                                                         0.572156       0.730611
+                                                         0.221473      -0.234303
+                                                         0.075885       0.056701
+                          1       6    5pz               1.529974       0.623329
+                                                         0.572156       0.730611
+                                                         0.221473      -0.234303
+                                                         0.075885       0.056701
+
+                          1       7    4dx2              1.529974       0.641565
+                                                         0.572156       0.349115
+                                                         0.221473       0.047365
+                                                         0.075885       0.000033
+                          1       7    4dxy              1.529974       1.111223
+                                                         0.572156       0.604685
+                                                         0.221473       0.082039
+                                                         0.075885       0.000058
+                          1       7    4dxz              1.529974       1.111223
+                                                         0.572156       0.604685
+                                                         0.221473       0.082039
+                                                         0.075885       0.000058
+                          1       7    4dy2              1.529974       0.641565
+                                                         0.572156       0.349115
+                                                         0.221473       0.047365
+                                                         0.075885       0.000033
+                          1       7    4dyz              1.529974       1.111223
+                                                         0.572156       0.604685
+                                                         0.221473       0.082039
+                                                         0.075885       0.000058
+                          1       7    4dz2              1.529974       0.641565
+                                                         0.572156       0.349115
+                                                         0.221473       0.047365
+                                                         0.075885       0.000033
+
+                          1       8    5dx2              1.529974      -0.416790
+                                                         0.572156       0.702038
+                                                         0.221473      -0.180280
+                                                         0.075885       0.002500
+                          1       8    5dxy              1.529974      -0.721901
+                                                         0.572156       1.215965
+                                                         0.221473      -0.312254
+                                                         0.075885       0.004331
+                          1       8    5dxz              1.529974      -0.721901
+                                                         0.572156       1.215965
+                                                         0.221473      -0.312254
+                                                         0.075885       0.004331
+                          1       8    5dy2              1.529974      -0.416790
+                                                         0.572156       0.702038
+                                                         0.221473      -0.180280
+                                                         0.075885       0.002500
+                          1       8    5dyz              1.529974      -0.721901
+                                                         0.572156       1.215965
+                                                         0.221473      -0.312254
+                                                         0.075885       0.004331
+                          1       8    5dz2              1.529974      -0.416790
+                                                         0.572156       0.702038
+                                                         0.221473      -0.180280
+                                                         0.075885       0.002500
+
+                          1       9    5fx3              1.529974       0.452264
+                                                         0.572156       0.259688
+                                                         0.221473       0.022786
+                                                         0.075885      -0.000501
+                          1       9    5fx2y             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fx2z             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fxy2             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fxyz             1.529974       1.751610
+                                                         0.572156       1.005767
+                                                         0.221473       0.088251
+                                                         0.075885      -0.001939
+                          1       9    5fxz2             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fy3              1.529974       0.452264
+                                                         0.572156       0.259688
+                                                         0.221473       0.022786
+                                                         0.075885      -0.000501
+                          1       9    5fy2z             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fyz2             1.529974       1.011293
+                                                         0.572156       0.580680
+                                                         0.221473       0.050951
+                                                         0.075885      -0.001120
+                          1       9    5fz3              1.529974       0.452264
+                                                         0.572156       0.259688
+                                                         0.221473       0.022786
+                                                         0.075885      -0.000501
+
+     GTH Potential information for                                    GTH-PBE-q5
+
+       Description:                       Goedecker-Teter-Hutter pseudopotential
+                                           Goedecker et al., PRB 54, 1703 (1996)
+                                          Hartwigsen et al., PRB 58, 3641 (1998)
+                                                      Krack, TCA 114, 145 (2005)
+
+       Gaussian exponent of the core charge distribution:               2.702572
+       Electronic configuration (s p d ...):                       2   3   0   0
+
+       Parameters of the local part of the GTH pseudopotential:
+
+                          rloc        C1          C2          C3          C4
+                        0.430127   -5.862875
+
+       Parameters of the non-local part of the GTH pseudopotential:
+
+                   l      r(l)      h(i,j,l)
+
+                   0    0.396379   11.009068   -3.470357
+                                   -3.470357    4.480230
+                   1    0.448294    3.056058
+
+  3. Atomic kind: H                                     Number of atoms:       4
+
+     Orbital Basis Set                                   TZV2P-MOLOPT-PBE-GTH-q1
+
+       Number of orbital shell sets:                                           1
+       Number of orbital shells:                                               6
+       Number of primitive Cartesian functions:                                5
+       Number of Cartesian basis functions:                                   15
+       Number of spherical basis functions:                                   14
+       Norm type:                                                              2
+
+       Normalised Cartesian orbitals:
+
+                        Set   Shell   Orbital            Exponent    Coefficient
+
+                          1       1    2s                9.586642       0.069481
+                                                         2.202360       0.112147
+                                                         0.604094       0.130550
+                                                         0.146498       0.088477
+                                                         0.139526       0.035929
+
+                          1       2    3s                9.586642      -0.087313
+                                                         2.202360      -0.117928
+                                                         0.604094      -0.099372
+                                                         0.146498      -0.105375
+                                                         0.139526       0.287433
+
+                          1       3    4s                9.586642       0.882480
+                                                         2.202360       0.096105
+                                                         0.604094      -0.739894
+                                                         0.146498       0.120904
+                                                         0.139526       0.013904
+
+                          1       4    3px               9.586642      -2.186125
+                                                         2.202360       1.112625
+                                                         0.604094       0.330981
+                                                         0.146498       0.087385
+                                                         0.139526      -0.016905
+                          1       4    3py               9.586642      -2.186125
+                                                         2.202360       1.112625
+                                                         0.604094       0.330981
+                                                         0.146498       0.087385
+                                                         0.139526      -0.016905
+                          1       4    3pz               9.586642      -2.186125
+                                                         2.202360       1.112625
+                                                         0.604094       0.330981
+                                                         0.146498       0.087385
+                                                         0.139526      -0.016905
+
+                          1       5    4px               9.586642       1.866908
+                                                         2.202360       0.174551
+                                                         0.604094       0.060190
+                                                         0.146498       0.014182
+                                                         0.139526       0.100545
+                          1       5    4py               9.586642       1.866908
+                                                         2.202360       0.174551
+                                                         0.604094       0.060190
+                                                         0.146498       0.014182
+                                                         0.139526       0.100545
+                          1       5    4pz               9.586642       1.866908
+                                                         2.202360       0.174551
+                                                         0.604094       0.060190
+                                                         0.146498       0.014182
+                                                         0.139526       0.100545
+
+                          1       6    4dx2              9.586642       0.111501
+                                                         2.202360      -0.020603
+                                                         0.604094      -0.012612
+                                                         0.146498      -0.000171
+                                                         0.139526       0.052995
+                          1       6    4dxy              9.586642       0.193125
+                                                         2.202360      -0.035686
+                                                         0.604094      -0.021844
+                                                         0.146498      -0.000296
+                                                         0.139526       0.091790
+                          1       6    4dxz              9.586642       0.193125
+                                                         2.202360      -0.035686
+                                                         0.604094      -0.021844
+                                                         0.146498      -0.000296
+                                                         0.139526       0.091790
+                          1       6    4dy2              9.586642       0.111501
+                                                         2.202360      -0.020603
+                                                         0.604094      -0.012612
+                                                         0.146498      -0.000171
+                                                         0.139526       0.052995
+                          1       6    4dyz              9.586642       0.193125
+                                                         2.202360      -0.035686
+                                                         0.604094      -0.021844
+                                                         0.146498      -0.000296
+                                                         0.139526       0.091790
+                          1       6    4dz2              9.586642       0.111501
+                                                         2.202360      -0.020603
+                                                         0.604094      -0.012612
+                                                         0.146498      -0.000171
+                                                         0.139526       0.052995
+
+       Atomic covalent radius [Angstrom]:                                  0.320
+
+       Atomic van der Waals radius [Angstrom]:                             1.090
+
+     The atoms of this atomic kind are PAW atoms (GAPW):
+       Hard Gaussian function radius:                                      1.000
+       Rho0 radius:                                                        1.000
+       Maximum GTO radius used for PAW projector construction:            24.566
+
+     GAPW Soft Basis Set                            TZV2P-MOLOPT-PBE-GTH-q1_soft
+
+       Number of orbital shell sets:                                           1
+       Number of orbital shells:                                               6
+       Number of primitive Cartesian functions:                                4
+       Number of Cartesian basis functions:                                   15
+       Number of spherical basis functions:                                   14
+       Norm type:                                                              2
+
+       Normalised Cartesian orbitals:
+
+                        Set   Shell   Orbital            Exponent    Coefficient
+
+                          1       1    2s                2.202360       0.112147
+                                                         0.604094       0.130550
+                                                         0.146498       0.088477
+                                                         0.139526       0.035929
+
+                          1       2    3s                2.202360      -0.117928
+                                                         0.604094      -0.099372
+                                                         0.146498      -0.105375
+                                                         0.139526       0.287433
+
+                          1       3    4s                2.202360       0.096105
+                                                         0.604094      -0.739894
+                                                         0.146498       0.120904
+                                                         0.139526       0.013904
+
+                          1       4    3px               2.202360       1.112625
+                                                         0.604094       0.330981
+                                                         0.146498       0.087385
+                                                         0.139526      -0.016905
+                          1       4    3py               2.202360       1.112625
+                                                         0.604094       0.330981
+                                                         0.146498       0.087385
+                                                         0.139526      -0.016905
+                          1       4    3pz               2.202360       1.112625
+                                                         0.604094       0.330981
+                                                         0.146498       0.087385
+                                                         0.139526      -0.016905
+
+                          1       5    4px               2.202360       0.174551
+                                                         0.604094       0.060190
+                                                         0.146498       0.014182
+                                                         0.139526       0.100545
+                          1       5    4py               2.202360       0.174551
+                                                         0.604094       0.060190
+                                                         0.146498       0.014182
+                                                         0.139526       0.100545
+                          1       5    4pz               2.202360       0.174551
+                                                         0.604094       0.060190
+                                                         0.146498       0.014182
+                                                         0.139526       0.100545
+
+                          1       6    4dx2              2.202360      -0.020603
+                                                         0.604094      -0.012612
+                                                         0.146498      -0.000171
+                                                         0.139526       0.052995
+                          1       6    4dxy              2.202360      -0.035686
+                                                         0.604094      -0.021844
+                                                         0.146498      -0.000296
+                                                         0.139526       0.091790
+                          1       6    4dxz              2.202360      -0.035686
+                                                         0.604094      -0.021844
+                                                         0.146498      -0.000296
+                                                         0.139526       0.091790
+                          1       6    4dy2              2.202360      -0.020603
+                                                         0.604094      -0.012612
+                                                         0.146498      -0.000171
+                                                         0.139526       0.052995
+                          1       6    4dyz              2.202360      -0.035686
+                                                         0.604094      -0.021844
+                                                         0.146498      -0.000296
+                                                         0.139526       0.091790
+                          1       6    4dz2              2.202360      -0.020603
+                                                         0.604094      -0.012612
+                                                         0.146498      -0.000171
+                                                         0.139526       0.052995
+
+     GTH Potential information for                                    GTH-PBE-q1
+
+       Description:                       Goedecker-Teter-Hutter pseudopotential
+                                           Goedecker et al., PRB 54, 1703 (1996)
+                                          Hartwigsen et al., PRB 58, 3641 (1998)
+                                                      Krack, TCA 114, 145 (2005)
+
+       Gaussian exponent of the core charge distribution:              12.426182
+       Electronic configuration (s p d ...):                       1   0   0   0
+
+       Parameters of the local part of the GTH pseudopotential:
+
+                          rloc        C1          C2          C3          C4
+                        0.200593   -4.178068    0.724409
+
+
+ MOLECULE KIND INFORMATION
+
+
+ All atoms are their own molecule, skipping detailed information
+
+
+ TOTAL NUMBERS AND MAXIMUM NUMBERS
+
+  Total number of            - Atomic kinds:                                   3
+                             - Atoms:                                         13
+                             - Shell sets:                                    13
+                             - Shells:                                       105
+                             - Primitive Cartesian functions:                 63
+                             - Cartesian basis functions:                    366
+                             - Spherical basis functions:                    317
+
+  Maximum angular momentum of- Orbital basis functions:                        3
+                             - Local part of the GTH pseudopotential:          2
+                             - Non-local part of the GTH pseudopotential:      2
+
+
+ MODULE QUICKSTEP: ATOMIC COORDINATES IN ANGSTROM
+
+   Atom Kind Element         X             Y             Z       Z(eff)     Mass
+      1    1 O     8     14.232365     15.555745     15.622840   6.0000  15.9994
+      2    2 P    15     14.002375     14.437655     14.460880   5.0000  30.9738
+      3    1 O     8     12.864035     14.670175     13.576690   6.0000  15.9994
+      4    1 O     8     15.469135     14.597735     13.755250   6.0000  15.9994
+      5    2 P    15     16.837645     14.370825     14.596370   5.0000  30.9738
+      6    1 O     8     16.718645     13.237735     15.535550   6.0000  15.9994
+      7    1 O     8     17.961305     14.177515     13.505620   6.0000  15.9994
+      8    1 O     8     17.170995     15.809075     15.197290   6.0000  15.9994
+      9    1 O     8     14.052735     13.027575     15.166590   6.0000  15.9994
+     10    3 H     1     13.395315     15.830825     16.032340   1.0000   1.0079
+     11    3 H     1     18.135965     14.968865     12.967660   1.0000   1.0079
+     12    3 H     1     16.414855     16.154355     15.711690   1.0000   1.0079
+     13    3 H     1     14.978025     12.845645     15.500590   1.0000   1.0079
+
+
+
+ SCF PARAMETERS         Density guess:                                    ATOMIC
+                        --------------------------------------------------------
+                        max_scf:                                             200
+                        max_scf_history:                                       0
+                        max_diis:                                              4
+                        --------------------------------------------------------
+                        eps_scf:                                        1.00E-07
+                        eps_scf_history:                                0.00E+00
+                        eps_diis:                                       0.00E+00
+                        eps_eigval:                                     1.00E-05
+                        --------------------------------------------------------
+                        level_shift [a.u.]:                             0.000000
+                        --------------------------------------------------------
+                        Outer loop SCF in use 
+                        No variables optimised in outer loop
+                        eps_scf                                         1.00E-07
+                        max_scf                                               20
+                        No outer loop optimization
+                        step_size                                       5.00E-01
+
+ PW_GRID| Information for grid number                                          1
+ PW_GRID| Cutoff [a.u.]                                                    200.0
+ PW_GRID| spherical cutoff:                                                   NO
+ PW_GRID|   Bounds   1           -187     187                Points:         375
+ PW_GRID|   Bounds   2           -180     179                Points:         360
+ PW_GRID|   Bounds   3           -180     179                Points:         360
+ PW_GRID| Volume element (a.u.^3)  0.3620E-02     Volume (a.u.^3)    175935.8309
+ PW_GRID| Grid span                                                    FULLSPACE
+
+ PW_GRID| Information for grid number                                          2
+ PW_GRID| Number of the reference grid                                         1
+ PW_GRID| Cutoff [a.u.]                                                     66.7
+ PW_GRID| spherical cutoff:                                                   NO
+ PW_GRID|   Bounds   1           -108     107                Points:         216
+ PW_GRID|   Bounds   2           -108     107                Points:         216
+ PW_GRID|   Bounds   3           -108     107                Points:         216
+ PW_GRID| Volume element (a.u.^3)  0.1746E-01     Volume (a.u.^3)    175935.8309
+ PW_GRID| Grid span                                                    FULLSPACE
+
+ PW_GRID| Information for grid number                                          3
+ PW_GRID| Number of the reference grid                                         1
+ PW_GRID| Cutoff [a.u.]                                                     22.2
+ PW_GRID| spherical cutoff:                                                   NO
+ PW_GRID|   Bounds   1            -62      62                Points:         125
+ PW_GRID|   Bounds   2            -60      59                Points:         120
+ PW_GRID|   Bounds   3            -60      59                Points:         120
+ PW_GRID| Volume element (a.u.^3)  0.9774E-01     Volume (a.u.^3)    175935.8309
+ PW_GRID| Grid span                                                    FULLSPACE
+
+ PW_GRID| Information for grid number                                          4
+ PW_GRID| Number of the reference grid                                         1
+ PW_GRID| Cutoff [a.u.]                                                      7.4
+ PW_GRID| spherical cutoff:                                                   NO
+ PW_GRID|   Bounds   1            -36      35                Points:          72
+ PW_GRID|   Bounds   2            -36      35                Points:          72
+ PW_GRID|   Bounds   3            -36      35                Points:          72
+ PW_GRID| Volume element (a.u.^3)  0.4714         Volume (a.u.^3)    175935.8309
+ PW_GRID| Grid span                                                    FULLSPACE
+
+ PW_GRID| Information for grid number                                          5
+ PW_GRID| Number of the reference grid                                         1
+ PW_GRID| Cutoff [a.u.]                                                      2.5
+ PW_GRID| spherical cutoff:                                                   NO
+ PW_GRID|   Bounds   1            -22      22                Points:          45
+ PW_GRID|   Bounds   2            -20      19                Points:          40
+ PW_GRID|   Bounds   3            -20      19                Points:          40
+ PW_GRID| Volume element (a.u.^3)   2.444         Volume (a.u.^3)    175935.8309
+ PW_GRID| Grid span                                                    FULLSPACE
+
+ POISSON| Solver                                                        ANALYTIC
+ POISSON| Periodicity                                                       NONE
+
+ RS_GRID| Information for grid number                                          1
+ RS_GRID|   Bounds   1           -187     187                Points:         375
+ RS_GRID|   Bounds   2           -180     179                Points:         360
+ RS_GRID|   Bounds   3           -180     179                Points:         360
+
+ RS_GRID| Information for grid number                                          2
+ RS_GRID|   Bounds   1           -108     107                Points:         216
+ RS_GRID|   Bounds   2           -108     107                Points:         216
+ RS_GRID|   Bounds   3           -108     107                Points:         216
+
+ RS_GRID| Information for grid number                                          3
+ RS_GRID|   Bounds   1            -62      62                Points:         125
+ RS_GRID|   Bounds   2            -60      59                Points:         120
+ RS_GRID|   Bounds   3            -60      59                Points:         120
+
+ RS_GRID| Information for grid number                                          4
+ RS_GRID|   Bounds   1            -36      35                Points:          72
+ RS_GRID|   Bounds   2            -36      35                Points:          72
+ RS_GRID|   Bounds   3            -36      35                Points:          72
+
+ RS_GRID| Information for grid number                                          5
+ RS_GRID|   Bounds   1            -22      22                Points:          45
+ RS_GRID|   Bounds   2            -20      19                Points:          40
+ RS_GRID|   Bounds   3            -20      19                Points:          40
+
+ Extrapolation method: initial_guess
+
+ Atomic guess: The first density matrix is obtained in terms of atomic orbitals
+               and electronic configurations assigned to each atomic kind
+
+ Guess for atomic kind: O
+
+ Electronic structure
+    Total number of core electrons                                          2.00
+    Total number of valence electrons                                       6.00
+    Total number of electrons                                               8.00
+    Multiplicity                                                   not specified
+    S   [  2.00] 2.00
+    P      4.00
+
+
+ *******************************************************************************
+                  Iteration          Convergence                     Energy [au]
+ *******************************************************************************
+                          1        0.796005                     -15.566061392878
+                          2        0.774658                     -15.568438641125
+                          3        0.351111E-01                 -15.654930076648
+                          4        0.189172E-02                 -15.655143267357
+                          5        0.220385E-04                 -15.655143728195
+                          6        0.421749E-06                 -15.655143728266
+
+ Energy components [Hartree]           Total Energy ::          -15.655143728266
+                                        Band Energy ::           -3.002138986162
+                                     Kinetic Energy ::           11.764067744793
+                                   Potential Energy ::          -27.419211473059
+                                      Virial (-V/T) ::            2.330759399545
+                                        Core Energy ::          -26.135412074763
+                                          XC Energy ::           -3.153998435019
+                                     Coulomb Energy ::           13.634266781516
+                       Total Pseudopotential Energy ::          -37.934831757086
+                       Local Pseudopotential Energy ::          -39.243587898829
+                    Nonlocal Pseudopotential Energy ::            1.308756141743
+                                        Confinement ::            0.353519375302
+
+ Orbital energies  State     L     Occupation   Energy[a.u.]          Energy[eV]
+
+                       1     0          2.000      -0.864691          -23.529445
+
+                       1     1          4.000      -0.318189           -8.658367
+
+
+ Total Electron Density at R=0:                                         0.000131
+
+ Guess for atomic kind: P
+
+ Electronic structure
+    Total number of core electrons                                         10.00
+    Total number of valence electrons                                       5.00
+    Total number of electrons                                              15.00
+    Multiplicity                                                   not specified
+    S   [  2.00  2.00] 2.00
+    P   [  6.00] 3.00
+
+
+ *******************************************************************************
+                  Iteration          Convergence                     Energy [au]
+ *******************************************************************************
+                          1        0.604309E-01                  -6.293597000089
+                          2        0.346626E-01                  -6.294929923595
+                          3        0.503248E-04                  -6.295587436512
+                          4        0.695941E-05                  -6.295587437917
+                          5        0.735456E-08                  -6.295587437943
+
+ Energy components [Hartree]           Total Energy ::           -6.295587437943
+                                        Band Energy ::           -1.516045246136
+                                     Kinetic Energy ::            2.372112684896
+                                   Potential Energy ::           -8.667700122839
+                                      Virial (-V/T) ::            3.654000156918
+                                        Core Energy ::          -10.063435457339
+                                          XC Energy ::           -1.454817777172
+                                     Coulomb Energy ::            5.222665796569
+                       Total Pseudopotential Energy ::          -12.496846060064
+                       Local Pseudopotential Energy ::          -13.871892029905
+                    Nonlocal Pseudopotential Energy ::            1.375045969840
+                                        Confinement ::            0.612979178287
+
+ Orbital energies  State     L     Occupation   Energy[a.u.]          Energy[eV]
+
+                       1     0          2.000      -0.490144          -13.337484
+
+                       1     1          3.000      -0.178586           -4.859574
+
+
+ Total Electron Density at R=0:                                         0.000116
+
+ Guess for atomic kind: H
+
+ Electronic structure
+    Total number of core electrons                                          0.00
+    Total number of valence electrons                                       1.00
+    Total number of electrons                                               1.00
+    Multiplicity                                                   not specified
+    S      1.00
+
+
+ *******************************************************************************
+                  Iteration          Convergence                     Energy [au]
+ *******************************************************************************
+                          1        0.471942E-02                  -0.424095106469
+                          2        0.464819E-03                  -0.424113671871
+                          3        0.190364E-04                  -0.424114007136
+                          4        0.633677E-08                  -0.424114007691
+
+ Energy components [Hartree]           Total Energy ::           -0.424114007691
+                                        Band Energy ::           -0.198799540676
+                                     Kinetic Energy ::            0.462903625467
+                                   Potential Energy ::           -0.887017633158
+                                      Virial (-V/T) ::            1.916203685515
+                                        Core Energy ::           -0.479182004469
+                                          XC Energy ::           -0.244447840446
+                                     Coulomb Energy ::            0.299515837225
+                       Total Pseudopotential Energy ::           -0.960851778720
+                       Local Pseudopotential Energy ::           -0.960851778720
+                    Nonlocal Pseudopotential Energy ::            0.000000000000
+                                        Confinement ::            0.187661487833
+
+ Orbital energies  State     L     Occupation   Energy[a.u.]          Energy[eV]
+
+                       1     0          1.000      -0.198800           -5.409611
+
+
+ Total Electron Density at R=0:                                         0.230125
+ Re-scaling the density matrix to get the right number of electrons
+                  # Electrons              Trace(P)               Scaling factor
+                           56                56.000                        1.000
+
+ Number of electrons:                                                         56
+ Number of occupied orbitals:                                                 28
+ Number of molecular orbitals:                                                28
+
+ Number of orbital functions:                                                317
+ Number of independent orbital functions:                                    317
+
+
+ SCF WAVEFUNCTION OPTIMIZATION
+
+  ----------------------------------- OT ---------------------------------------
+  Minimizer      : DIIS                : direct inversion
+                                         in the iterative subspace
+                                         using   7 DIIS vectors
+                                         safer DIIS on
+  Preconditioner : FULL_ALL            : diagonalization, state selective
+  Precond_solver : DEFAULT
+  stepsize       :    0.10000000                  energy_gap     :    0.00100000
+  eps_taylor     :   0.10000E-15                  max_taylor     :             4
+  ----------------------------------- OT ---------------------------------------
+
+  Step     Update method      Time    Convergence         Total energy    Change
+  ------------------------------------------------------------------------------
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.980467374736E-01   1.451171699923E+00   1.100964779061E+01
+
+ SKALA_GPW| Native grid Torch CUDA device 0 of 1 requested -1
+ SKALA_GPW| Native grid Torch CUDA rank devices 0:0
+ SKALA_GPW| Active atom-composite XC energy  -2.8762249215196757E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999985924806772E+01
+ SKALA_GPW| Active atom-composite density range  -2.2040728529334950E-09   7.2046784405272435E-01
+ SKALA_GPW| Active atom-composite tau range  -1.4855085400100549E-08   2.0128348585503026E+01
+ SKALA_GPW| Active atom-composite tau integral   1.0286000565158977E+02
+ SKALA_GPW| Active atom-composite max gradient   3.0068008267528938E+00
+     1 OT DIIS     0.10E+00   33.6     0.09061780      -121.6161504967 -1.22E+02
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.369952484146E-01   1.436119196509E+00   1.061013356875E+01
+ SKALA_GPW| Active atom-composite XC energy  -2.9684934786038241E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999986315472746E+01
+ SKALA_GPW| Active atom-composite density range  -3.2412057833982950E-09   7.0145926134763614E-01
+ SKALA_GPW| Active atom-composite tau range  -3.3785585783404533E-08   1.9959052813150286E+01
+ SKALA_GPW| Active atom-composite tau integral   9.9474503564853180E+01
+ SKALA_GPW| Active atom-composite max gradient   2.8264537167941430E+00
+     2 OT DIIS     0.10E+00   38.5     0.09761377      -125.1495673493 -3.53E+00
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.384703869997E-01   1.362636794980E+00   1.109580330373E+01
+ SKALA_GPW| Active atom-composite XC energy  -2.9791034227363461E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987517033695E+01
+ SKALA_GPW| Active atom-composite density range  -3.4765766012055158E-09   6.7858697889655928E-01
+ SKALA_GPW| Active atom-composite tau range  -2.6258803378562126E-08   1.9259817541495870E+01
+ SKALA_GPW| Active atom-composite tau integral   9.8876317914019680E+01
+ SKALA_GPW| Active atom-composite max gradient   2.7652270793604177E+00
+     3 OT DIIS     0.10E+00   36.9     0.03761780      -126.5165899876 -1.37E+00
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.277252998271E-01   1.328500509453E+00   9.620545619350E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9546065790819124E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987854319976E+01
+ SKALA_GPW| Active atom-composite density range  -2.7563561709971516E-09   6.4540431559723488E-01
+ SKALA_GPW| Active atom-composite tau range  -2.9499793944822834E-08   1.7619561157762838E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6235874962191872E+01
+ SKALA_GPW| Active atom-composite max gradient   2.5253400780381527E+00
+     4 OT DIIS     0.10E+00   37.3     0.02712592      -127.0104066007 -4.94E-01
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.254801764539E-01   1.293066887550E+00   1.026697955761E+01
+ SKALA_GPW| Active atom-composite XC energy  -2.9665296320864389E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988593175907E+01
+ SKALA_GPW| Active atom-composite density range  -2.7186159989763055E-09   6.3047603546079412E-01
+ SKALA_GPW| Active atom-composite tau range  -2.5745791844626696E-08   1.7505936490411504E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6452372322659329E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4565975786828154E+00
+     5 OT DIIS     0.10E+00   37.0     0.02048055      -127.2535040816 -2.43E-01
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.246428454202E-01   1.277142749504E+00   1.013171246410E+01
+ SKALA_GPW| Active atom-composite XC energy  -2.9733540202626237E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988716352817E+01
+ SKALA_GPW| Active atom-composite density range  -2.5694383649004925E-09   6.2402033128358825E-01
+ SKALA_GPW| Active atom-composite tau range  -2.1556499897569052E-08   1.7156494731514226E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6449034165870870E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4403177845217585E+00
+     6 OT DIIS     0.10E+00   37.5     0.01991688      -127.4678289469 -2.14E-01
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.258645395729E-01   1.279561270316E+00   1.013069357411E+01
+ SKALA_GPW| Active atom-composite XC energy  -2.9744016431901088E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988742239339E+01
+ SKALA_GPW| Active atom-composite density range  -2.5822766392774629E-09   6.2421728202088855E-01
+ SKALA_GPW| Active atom-composite tau range  -2.1510341013514425E-08   1.7128366352349737E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6404789256847849E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4445726178246860E+00
+     7 OT DIIS     0.10E+00   36.8     0.01989213      -127.5136934314 -4.59E-02
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.260526500858E-01   1.278239105718E+00   1.013723562711E+01
+ SKALA_GPW| Active atom-composite XC energy  -2.9754901957977303E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988756369873E+01
+ SKALA_GPW| Active atom-composite density range  -2.5849957834470542E-09   6.2340447543101429E-01
+ SKALA_GPW| Active atom-composite tau range  -2.1536403135660265E-08   1.7130471969961427E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6425835075211452E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4423062675023672E+00
+     8 OT SD       0.10E+00   37.1     0.02009962      -127.5355397946 -2.18E-02
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.365610545919E-01   1.250487988995E+00   9.898291908754E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9814876572002603E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988584939359E+01
+ SKALA_GPW| Active atom-composite density range  -2.6971397592279926E-09   6.1917422332753536E-01
+ SKALA_GPW| Active atom-composite tau range  -2.2622907294097744E-08   1.6963449091527188E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6026489096662473E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4400115918421434E+00
+     9 OT SD       0.10E+00   36.5     0.01407421      -127.8330933680 -2.98E-01
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.385028381968E-01   1.201790165826E+00   9.949011652261E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9880220885771660E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988411672383E+01
+ SKALA_GPW| Active atom-composite density range  -2.7144639221660372E-09   6.0439631641368485E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3738403079421445E-08   1.6946386090594661E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6103351071438439E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4239382289761897E+00
+    10 OT SD       0.10E+00   37.6     0.00902283      -127.9637276419 -1.31E-01
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.386253294126E-01   1.213088028008E+00   9.960173590874E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9850563220615726E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988313285002E+01
+ SKALA_GPW| Active atom-composite density range  -3.3064468581087086E-09   6.0599246647216509E-01
+ SKALA_GPW| Active atom-composite tau range  -2.4457913961891742E-08   1.6855277177303808E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5766088269211068E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4408477324870264E+00
+    11 OT SD       0.10E+00   37.5     0.00762561      -128.0114461402 -4.77E-02
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.372849983632E-01   1.180953972071E+00   9.941263851875E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9917208449909509E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988066323759E+01
+ SKALA_GPW| Active atom-composite density range  -3.3493830712218435E-09   6.0063585086228333E-01
+ SKALA_GPW| Active atom-composite tau range  -2.5835761053173089E-08   1.7060605414139768E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6147881435188069E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4009553718714738E+00
+    12 OT DIIS     0.10E+00   36.9     0.00887008      -128.0286732052 -1.72E-02
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.322799239317E-01   1.236121785901E+00   1.015453212557E+01
+ SKALA_GPW| Active atom-composite XC energy  -2.9931479391164988E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988612925122E+01
+ SKALA_GPW| Active atom-composite density range  -3.3208602091629105E-09   6.0179339807460186E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3692265505008074E-08   1.6985725963444370E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6362347618745034E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4196908353599511E+00
+    13 OT DIIS     0.10E+00   36.9     0.01375656      -127.9748321742  5.38E-02
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.346525415723E-01   1.213731161565E+00   1.004821190644E+01
+ SKALA_GPW| Active atom-composite XC energy  -2.9915015417856502E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988339319813E+01
+ SKALA_GPW| Active atom-composite density range  -3.5058379545368074E-09   5.9810192453575473E-01
+ SKALA_GPW| Active atom-composite tau range  -2.4243965711682741E-08   1.6760054544806412E+01
+ SKALA_GPW| Active atom-composite tau integral   9.6108762395872020E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4140471301263098E+00
+    14 OT DIIS     0.10E+00   36.9     0.00817009      -128.0329775142 -5.81E-02
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.368902537189E-01   1.201155924755E+00   9.971678063116E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889312177295608E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999988023622734E+01
+ SKALA_GPW| Active atom-composite density range  -3.4757371671921555E-09   5.9860552532776101E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3769004223629222E-08   1.6661100199322330E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5873111814921756E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4287177487251492E+00
+    15 OT DIIS     0.10E+00   37.5     0.00281140      -128.0615979933 -2.86E-02
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.366354753731E-01   1.191895329433E+00   9.948961800288E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9884499563340722E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987932608512E+01
+ SKALA_GPW| Active atom-composite density range  -3.5213025523035237E-09   5.9577900519849958E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3921311972432558E-08   1.6569430992254816E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5827976806682884E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4146487215835180E+00
+    16 OT DIIS     0.10E+00   36.9     0.00156247      -128.0682622845 -6.66E-03
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.362163139414E-01   1.198494848454E+00   9.948436025142E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9895748625650306E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987943181551E+01
+ SKALA_GPW| Active atom-composite density range  -3.4962868815668036E-09   5.9572864676863868E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3773687722499852E-08   1.6616809856258822E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5899427140597453E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4139269180725309E+00
+    17 OT DIIS     0.10E+00   37.9     0.00136386      -128.0699912617 -1.73E-03
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.361843037447E-01   1.196073633701E+00   9.950742818400E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9891086332390763E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987925588549E+01
+ SKALA_GPW| Active atom-composite density range  -3.4616178628879666E-09   5.9454134658821212E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3535131919730742E-08   1.6622251828949743E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868889066638047E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4157371506135732E+00
+    18 OT DIIS     0.10E+00   37.2     0.00089348      -128.0710141519 -1.02E-03
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.359382423414E-01   1.195947110225E+00   9.955329674821E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889169134107039E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987915404510E+01
+ SKALA_GPW| Active atom-composite density range  -3.4532890746579938E-09   5.9384084850426455E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3508578165812946E-08   1.6582381755905612E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5859116742976070E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4145580290748301E+00
+    19 OT DIIS     0.10E+00   37.0     0.00061566      -128.0716984273 -6.84E-04
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358781590856E-01   1.196277154609E+00   9.951800393776E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890117110205381E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987899041912E+01
+ SKALA_GPW| Active atom-composite density range  -3.4405714274630679E-09   5.9417071259616538E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3469672383710149E-08   1.6589178536992243E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5865318501861495E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4144510657797209E+00
+    20 OT DIIS     0.10E+00   36.8     0.00042715      -128.0719476788 -2.49E-04
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358292790565E-01   1.195849103296E+00   9.949898422958E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890413448771831E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987890327361E+01
+ SKALA_GPW| Active atom-composite density range  -3.4297002030065566E-09   5.9429154029764664E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3420237233848287E-08   1.6595066610162537E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868622898861005E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4139643245307338E+00
+    21 OT DIIS     0.10E+00   37.2     0.00033769      -128.0720665986 -1.19E-04
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.356711479747E-01   1.195874724944E+00   9.955478666255E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889926267184368E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987895451106E+01
+ SKALA_GPW| Active atom-composite density range  -3.4266841677861956E-09   5.9414349469014449E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3434827721332608E-08   1.6585493316897956E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5866900235655592E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4142575860258813E+00
+    22 OT DIIS     0.10E+00   36.8     0.00022444      -128.0721417765 -7.52E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.357203125204E-01   1.196205811829E+00   9.952513656806E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889421522562362E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987896885052E+01
+ SKALA_GPW| Active atom-composite density range  -3.4200470541771271E-09   5.9414720365430795E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3394206004659277E-08   1.6589252004923122E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5863391048153332E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4152699925721857E+00
+    23 OT DIIS     0.10E+00   37.9     0.00020590      -128.0721784379 -3.67E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.356530410804E-01   1.195953927022E+00   9.952851655809E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889574711300256E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987894613994E+01
+ SKALA_GPW| Active atom-composite density range  -3.4212135334398085E-09   5.9407949955302541E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3424274998510661E-08   1.6586278979613546E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5865213578403626E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4144762603612282E+00
+    24 OT DIIS     0.10E+00   37.4     0.00013297      -128.0722070670 -2.86E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.356315995522E-01   1.196039289512E+00   9.952969534610E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890124302131685E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987895755211E+01
+ SKALA_GPW| Active atom-composite density range  -3.4201955252252438E-09   5.9417761158379478E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3419622672168279E-08   1.6592831000641816E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868616744372886E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4144572011049048E+00
+    25 OT DIIS     0.10E+00   37.5     0.00012416      -128.0722259851 -1.89E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.356419420329E-01   1.196039059073E+00   9.953001287097E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889715705403137E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987897228003E+01
+ SKALA_GPW| Active atom-composite density range  -3.4209277543263049E-09   5.9407411511788577E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3418263858899379E-08   1.6588679362160779E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5865939452758496E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4147255967716372E+00
+    26 OT DIIS     0.10E+00   37.4     0.00010875      -128.0722388300 -1.28E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.356394196677E-01   1.196010342092E+00   9.952840529838E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889772738138483E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987897355901E+01
+ SKALA_GPW| Active atom-composite density range  -3.4221683379136685E-09   5.9401094440760072E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3428352401531481E-08   1.6586502318677187E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5866324925769064E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4145710701337646E+00
+    27 OT DIIS     0.10E+00   36.8     0.00010194      -128.0722517545 -1.29E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.356481910848E-01   1.196109001152E+00   9.952288045398E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889979829861169E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987896501153E+01
+ SKALA_GPW| Active atom-composite density range  -3.4220213929132519E-09   5.9404839323386294E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3424510288997132E-08   1.6590223715962420E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5867492825405691E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4145143082505425E+00
+    28 OT DIIS     0.10E+00   36.7     0.00009811      -128.0722660764 -1.43E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.356621581133E-01   1.196050809238E+00   9.952232679190E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889991954133141E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987895605138E+01
+ SKALA_GPW| Active atom-composite density range  -3.4223093793952769E-09   5.9401732438577659E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3420422023361191E-08   1.6589936071835542E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5867514640492672E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4144334415244710E+00
+    29 OT DIIS     0.10E+00   37.9     0.00008724      -128.0722810959 -1.50E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.356621422059E-01   1.196063040888E+00   9.953029932510E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9889937211464357E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987895902848E+01
+ SKALA_GPW| Active atom-composite density range  -3.4230426660993176E-09   5.9396152469206631E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3422315448978401E-08   1.6587666983877462E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5867069245415777E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4145193515050778E+00
+    30 OT DIIS     0.10E+00   37.6     0.00007899      -128.0722938393 -1.27E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.357093499110E-01   1.196115621149E+00   9.952207414825E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890055329922276E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987894238750E+01
+ SKALA_GPW| Active atom-composite density range  -3.4229497169055740E-09   5.9392606512175550E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3414778646181729E-08   1.6588383230575825E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5867492321148760E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4145389475655206E+00
+    31 OT DIIS     0.10E+00   37.5     0.00006790      -128.0723132992 -1.95E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.357107285334E-01   1.196027156737E+00   9.952370100239E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890123526162508E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987892179632E+01
+ SKALA_GPW| Active atom-composite density range  -3.4233302780452771E-09   5.9389982394029284E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3420330195722159E-08   1.6587856008112606E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5867994022330308E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4142290563866546E+00
+    32 OT DIIS     0.10E+00   37.3     0.00006224      -128.0723216431 -8.34E-06
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.357407084689E-01   1.196038449292E+00   9.952491272475E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890252219991751E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987890568065E+01
+ SKALA_GPW| Active atom-composite density range  -3.4217535316025858E-09   5.9391538295509183E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3407601065887009E-08   1.6590397419167431E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868566672482274E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4142233138431353E+00
+    33 OT DIIS     0.10E+00   37.3     0.00005550      -128.0723338218 -1.22E-05
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.357665857114E-01   1.196015650453E+00   9.952721185154E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890135987037123E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987889565226E+01
+ SKALA_GPW| Active atom-composite density range  -3.4216229986307342E-09   5.9384724941504896E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3403841188613863E-08   1.6587805031373470E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5867639965402347E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4143176296648168E+00
+    34 OT DIIS     0.10E+00   37.6     0.00004505      -128.0723400906 -6.27E-06
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.357812127517E-01   1.195937732429E+00   9.952632830999E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890259604892350E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987888956014E+01
+ SKALA_GPW| Active atom-composite density range  -3.4215315589241087E-09   5.9381567785414435E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3409392980096202E-08   1.6587217256328916E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868354245733912E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141912100109812E+00
+    35 OT DIIS     0.10E+00   37.3     0.00003893      -128.0723439244 -3.83E-06
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.357973446860E-01   1.195954704553E+00   9.952487274902E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890329831773148E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887843332E+01
+ SKALA_GPW| Active atom-composite density range  -3.4202868020902761E-09   5.9383317081185338E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3403303805135689E-08   1.6589201575114085E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868676237652338E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141443207300455E+00
+    36 OT DIIS     0.10E+00   36.7     0.00003552      -128.0723463587 -2.43E-06
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358094097263E-01   1.195892357954E+00   9.952659250646E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890304485666938E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887086640E+01
+ SKALA_GPW| Active atom-composite density range  -3.4195265647526837E-09   5.9381501392396097E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3399082476847752E-08   1.6588786329761625E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868468219238750E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141151361796278E+00
+    37 OT DIIS     0.10E+00   37.1     0.00002837      -128.0723476790 -1.32E-06
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358143403436E-01   1.195858550194E+00   9.953026973222E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890291933313396E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887181994E+01
+ SKALA_GPW| Active atom-composite density range  -3.4192904826436198E-09   5.9379360422107230E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3399528581711000E-08   1.6588005641689403E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868315971479333E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141656022261446E+00
+    38 OT DIIS     0.10E+00   37.2     0.00002425      -128.0723484039 -7.25E-07
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358290781688E-01   1.195829647072E+00   9.952756808557E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890338777076973E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886936331E+01
+ SKALA_GPW| Active atom-composite density range  -3.4186606410676861E-09   5.9378488292257092E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398194798819638E-08   1.6588458170168824E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868535568885875E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141522370705566E+00
+    39 OT DIIS     0.10E+00   36.9     0.00001772      -128.0723489516 -5.48E-07
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358293917489E-01   1.195787341477E+00   9.952841734768E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890363306024060E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886500492E+01
+ SKALA_GPW| Active atom-composite density range  -3.4185925127608271E-09   5.9377902552333028E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3399404802412717E-08   1.6588417567417807E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868713628144420E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4140737361365447E+00
+    40 OT DIIS     0.10E+00   37.0     0.00001656      -128.0723491278 -1.76E-07
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358358443443E-01   1.195769440635E+00   9.952872565533E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890364564269166E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886531386E+01
+ SKALA_GPW| Active atom-composite density range  -3.4180254630881573E-09   5.9378095494707384E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3396165413795318E-08   1.6588998841683033E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868673775651487E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141043469911176E+00
+    41 OT DIIS     0.10E+00   37.2     0.00001461      -128.0723492151 -8.73E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358396515938E-01   1.195752488855E+00   9.952935949981E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890338723480728E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886493571E+01
+ SKALA_GPW| Active atom-composite density range  -3.4180601116846927E-09   5.9376592497155611E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3395551397772627E-08   1.6588429504014965E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868482739140973E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141366173776877E+00
+    42 OT DIIS     0.10E+00   37.7     0.00001207      -128.0723492498 -3.47E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358412977557E-01   1.195718285060E+00   9.952908064743E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890372323613992E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886586077E+01
+ SKALA_GPW| Active atom-composite density range  -3.4181938633198000E-09   5.9375984277552785E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3397434337773996E-08   1.6588416084707220E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868699277506167E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141174472950291E+00
+    43 OT DIIS     0.10E+00   37.4     0.00001036      -128.0723492855 -3.57E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358428147896E-01   1.195718663055E+00   9.952861869577E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890374860533242E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886511228E+01
+ SKALA_GPW| Active atom-composite density range  -3.4181062984996250E-09   5.9376288662799970E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3396306010617437E-08   1.6588825602120629E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868705473938263E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141163296039432E+00
+    44 OT DIIS     0.10E+00   37.3     0.00000986      -128.0723492754  1.01E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358436716707E-01   1.195702065507E+00   9.952899506973E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890364345172923E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886440664E+01
+ SKALA_GPW| Active atom-composite density range  -3.4181178011179308E-09   5.9375868331174264E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3395530884675266E-08   1.6588711040915019E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868640536154714E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141169694627065E+00
+    45 OT DIIS     0.10E+00   37.1     0.00000841      -128.0723493076 -3.22E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358432756069E-01   1.195690939831E+00   9.952966978743E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890361689604994E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886533098E+01
+ SKALA_GPW| Active atom-composite density range  -3.4182699034107589E-09   5.9375495337609174E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3395885303350566E-08   1.6588591414051322E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868617024047623E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141358803255315E+00
+    46 OT DIIS     0.10E+00   37.0     0.00000765      -128.0723493073  3.57E-10
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358447124325E-01   1.195683608484E+00   9.952887019151E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890367101663170E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886565506E+01
+ SKALA_GPW| Active atom-composite density range  -3.4183806821321780E-09   5.9375304551755959E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3396095202636559E-08   1.6588676506864470E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868647503804283E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141372849514964E+00
+    47 OT DIIS     0.10E+00   37.0     0.00000662      -128.0723493318 -2.45E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358430970976E-01   1.195676020676E+00   9.952903918755E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890372006342570E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886508670E+01
+ SKALA_GPW| Active atom-composite density range  -3.4185433277298766E-09   5.9375249347576098E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3396682754942548E-08   1.6588673675283093E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868691083921391E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141225431785664E+00
+    48 OT DIIS     0.10E+00   37.6     0.00000639      -128.0723493666 -3.48E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358431703431E-01   1.195673795274E+00   9.952898983545E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890366062919806E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886574594E+01
+ SKALA_GPW| Active atom-composite density range  -3.4185653068547521E-09   5.9375354973953676E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3396167317389439E-08   1.6588792830339390E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868647734425508E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141362121556385E+00
+    49 OT DIIS     0.10E+00   37.8     0.00000613      -128.0723493853 -1.87E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358430913877E-01   1.195670959015E+00   9.952908673353E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890358444467932E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886573848E+01
+ SKALA_GPW| Active atom-composite density range  -3.4186830417567388E-09   5.9375047145754156E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3396226988836039E-08   1.6588645327425336E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868595477230031E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141464987763568E+00
+    50 OT DIIS     0.10E+00   37.5     0.00000578      -128.0723494027 -1.74E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358421771302E-01   1.195662654163E+00   9.952894869353E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890367072543032E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886638067E+01
+ SKALA_GPW| Active atom-composite density range  -3.4188359123169928E-09   5.9375014209115307E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3397167796622120E-08   1.6588654026763987E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868656054475693E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141431798782111E+00
+    51 OT DIIS     0.10E+00   37.3     0.00000538      -128.0723494445 -4.18E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358413471625E-01   1.195667161506E+00   9.952873635233E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890363874056369E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886650928E+01
+ SKALA_GPW| Active atom-composite density range  -3.4188858944277767E-09   5.9375206921153789E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3397084846689573E-08   1.6588766010126069E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868636828089478E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141444417499187E+00
+    52 OT DIIS     0.10E+00   37.7     0.00000530      -128.0723494779 -3.34E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358405296884E-01   1.195664291495E+00   9.952883679650E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890358390002600E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886648213E+01
+ SKALA_GPW| Active atom-composite density range  -3.4189389693127626E-09   5.9375172810260202E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3397000972424189E-08   1.6588715798294100E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868606298960486E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141453684693372E+00
+    53 OT DIIS     0.10E+00   37.6     0.00000496      -128.0723494981 -2.02E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358392097468E-01   1.195662207754E+00   9.952908434245E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890356405165896E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886716028E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190328873766676E-09   5.9375209958561848E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3397380719469702E-08   1.6588681864150871E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868593318155703E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141553181193194E+00
+    54 OT DIIS     0.10E+00   37.5     0.00000467      -128.0723495378 -3.97E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358386897678E-01   1.195662852835E+00   9.952862222152E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890355905122853E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886775294E+01
+ SKALA_GPW| Active atom-composite density range  -3.4191129873842230E-09   5.9375281952561287E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3397781670196140E-08   1.6588711061686130E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868593093315909E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141568400885669E+00
+    55 OT DIIS     0.10E+00   37.8     0.00000417      -128.0723495828 -4.50E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358361740873E-01   1.195665363438E+00   9.952876206665E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890356757221468E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886798323E+01
+ SKALA_GPW| Active atom-composite density range  -3.4191858799664859E-09   5.9375498317998898E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398356872786544E-08   1.6588698876140786E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868612802707190E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141484272104448E+00
+    56 OT DIIS     0.10E+00   37.7     0.00000391      -128.0723496393 -5.66E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358352431608E-01   1.195668918306E+00   9.952868628099E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890349134990824E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886888583E+01
+ SKALA_GPW| Active atom-composite density range  -3.4191698336042316E-09   5.9375779874052104E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398078613288101E-08   1.6588774972537092E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868564526249855E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141598615990905E+00
+    57 OT DIIS     0.10E+00   37.1     0.00000378      -128.0723496788 -3.94E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358342998446E-01   1.195671949406E+00   9.952874523522E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890342702994374E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987886915463E+01
+ SKALA_GPW| Active atom-composite density range  -3.4192096116569933E-09   5.9375775095986949E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398188372371303E-08   1.6588664353860590E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868525940731885E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141668007469899E+00
+    58 OT DIIS     0.10E+00   37.3     0.00000343      -128.0723496940 -1.53E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358327280155E-01   1.195671694047E+00   9.952867302357E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890348347762927E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887004778E+01
+ SKALA_GPW| Active atom-composite density range  -3.4192386929221694E-09   5.9376041378589006E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398931072999233E-08   1.6588684315316165E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868573600130617E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141629522602317E+00
+    59 OT DIIS     0.10E+00   37.3     0.00000285      -128.0723497130 -1.89E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358315474353E-01   1.195682052288E+00   9.952856229056E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890343235024563E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887046395E+01
+ SKALA_GPW| Active atom-composite density range  -3.4192040659737969E-09   5.9376348899233888E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398788724013126E-08   1.6588749206314848E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868547131192628E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141634219730643E+00
+    60 OT DIIS     0.10E+00   37.6     0.00000276      -128.0723497257 -1.28E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358307494239E-01   1.195683929075E+00   9.952867973818E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890339032596167E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887060804E+01
+ SKALA_GPW| Active atom-composite density range  -3.4191840274343477E-09   5.9376435983447640E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398638199090760E-08   1.6588699884921990E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868526696779625E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141631675086455E+00
+    61 OT DIIS     0.10E+00   37.0     0.00000233      -128.0723497470 -2.12E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358300440770E-01   1.195686420147E+00   9.952884571752E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890338608148511E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887106421E+01
+ SKALA_GPW| Active atom-composite density range  -3.4191632716208988E-09   5.9376606313347147E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398708370281584E-08   1.6588691325456093E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868526234923479E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141681730793909E+00
+    62 OT DIIS     0.10E+00   37.2     0.00000192      -128.0723497391  7.88E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358299939781E-01   1.195689295872E+00   9.952861230282E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890338215899678E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887133301E+01
+ SKALA_GPW| Active atom-composite density range  -3.4191519834737084E-09   5.9376698723252475E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398810066845288E-08   1.6588702166193993E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868526857376722E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141674637130786E+00
+    63 OT DIIS     0.10E+00   37.1     0.00000153      -128.0723497446 -5.48E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358292197004E-01   1.195693307728E+00   9.952874965773E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890339137918460E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887142204E+01
+ SKALA_GPW| Active atom-composite density range  -3.4191342497296808E-09   5.9376823945504886E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398891059937459E-08   1.6588688477072125E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868540019313528E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141625686628720E+00
+    64 OT DIIS     0.10E+00   37.2     0.00000134      -128.0723497460 -1.39E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358292435328E-01   1.195695608303E+00   9.952873073166E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890336526943813E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887165190E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190977712698382E-09   5.9376929895323427E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398663975526173E-08   1.6588714388586396E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868522902630460E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141663368251844E+00
+    65 OT DIIS     0.10E+00   36.5     0.00000128      -128.0723497343  1.16E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358292635509E-01   1.195697108782E+00   9.952876002816E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890335383340808E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887162881E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190916956700128E-09   5.9376923895361011E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398615106986432E-08   1.6588678749238550E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868515803918257E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141675043655955E+00
+    66 OT DIIS     0.10E+00   37.2     0.00000115      -128.0723497441 -9.73E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358291852878E-01   1.195697178628E+00   9.952875604145E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890337851277550E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887173774E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190832912249276E-09   5.9376988000760389E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398743036922097E-08   1.6588688760026468E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868534100065702E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141653116761739E+00
+    67 OT DIIS     0.10E+00   37.5     0.00000097      -128.0723497423  1.73E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358291159189E-01   1.195700264690E+00   9.952874425252E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890336726129643E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887176331E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190683850468122E-09   5.9377037259225118E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398659735478407E-08   1.6588699858378121E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868527745831670E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141649763879234E+00
+    68 OT DIIS     0.10E+00   37.1     0.00000094      -128.0723497457 -3.36E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358291004923E-01   1.195700679334E+00   9.952878038224E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890336124670370E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887172310E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190605339332133E-09   5.9377036472950318E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398593135307484E-08   1.6588685444165847E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868524873645626E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141644934632671E+00
+    69 OT DIIS     0.10E+00   37.6     0.00000086      -128.0723497355  1.02E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358291332023E-01   1.195701011818E+00   9.952881959167E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890336561086720E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887178172E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190535742149055E-09   5.9377061850045221E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398577886497292E-08   1.6588686684193455E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868527100561721E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141653914420731E+00
+    70 OT DIIS     0.10E+00   37.5     0.00000078      -128.0723497531 -1.76E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358292684822E-01   1.195701455439E+00   9.952875839163E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890336678942674E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887179536E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190496071514954E-09   5.9377065946291263E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398587422101115E-08   1.6588689355712656E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868528028848061E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141649240132339E+00
+    71 OT DIIS     0.10E+00   37.4     0.00000072      -128.0723497464  6.71E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358292192600E-01   1.195702282709E+00   9.952880092551E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890337318315204E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887171166E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190467846706181E-09   5.9377069311756070E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398599685338624E-08   1.6588683873048854E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868533138356256E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141633001440628E+00
+    72 OT DIIS     0.10E+00   37.1     0.00000068      -128.0723497445  1.86E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358293236858E-01   1.195702768268E+00   9.952879135516E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890336644715909E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887176118E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190357613614445E-09   5.9377085821517794E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398518625954905E-08   1.6588691947984135E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868528143359669E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141643369930206E+00
+    73 OT DIIS     0.10E+00   37.3     0.00000067      -128.0723497384  6.12E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358294361904E-01   1.195702943641E+00   9.952879782920E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890336581742059E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887165659E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190345354120678E-09   5.9377065194120981E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398495028912955E-08   1.6588680407969004E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868527148174721E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141644620304543E+00
+    74 OT DIIS     0.10E+00   37.5     0.00000065      -128.0723497447 -6.31E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358295264226E-01   1.195702473405E+00   9.952879376792E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890337861908595E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887165744E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190317105546063E-09   5.9377068270704958E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398537234697594E-08   1.6588685998463706E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868535472307457E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141633190669101E+00
+    75 OT DIIS     0.10E+00   37.4     0.00000059      -128.0723497501 -5.37E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358295915145E-01   1.195703601390E+00   9.952878956723E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890337509453762E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887161247E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190258737193373E-09   5.9377064641092869E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398498577057460E-08   1.6588688956622651E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868532978370098E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141630113043338E+00
+    76 OT DIIS     0.10E+00   37.2     0.00000059      -128.0723497332  1.68E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358296666102E-01   1.195703459578E+00   9.952880890742E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890337449640349E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887152592E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190219181436693E-09   5.9377043007638342E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398459267129118E-08   1.6588679960983907E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868532344407271E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141625816635939E+00
+    77 OT DIIS     0.10E+00   39.2     0.00000056      -128.0723497490 -1.58E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358298196749E-01   1.195702972822E+00   9.952882480582E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890338048759123E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887146844E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190172704331127E-09   5.9377031689011517E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398439003791902E-08   1.6588683172421074E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868534848451759E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141629185711420E+00
+    78 OT DIIS     0.10E+00   38.3     0.00000050      -128.0723497484  5.98E-10
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358300076875E-01   1.195702792367E+00   9.952877409414E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890338313893345E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887142993E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190144318693515E-09   5.9377015209030803E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398442432703344E-08   1.6588685815997348E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868535958086625E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141624047211909E+00
+    79 OT DIIS     0.10E+00   37.9     0.00000046      -128.0723497568 -8.36E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358301036644E-01   1.195702507117E+00   9.952881267369E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890339231674581E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887128377E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190127370071902E-09   5.9376977521195673E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398449129834781E-08   1.6588681117840643E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868541455115150E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141609442596730E+00
+    80 OT DIIS     0.10E+00   37.2     0.00000040      -128.0723497381  1.87E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358302678106E-01   1.195702358761E+00   9.952879929352E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890338755042368E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887125805E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190043698103301E-09   5.9376969434670179E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398375929440636E-08   1.6588688061399516E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868536983484773E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141618545771548E+00
+    81 OT DIIS     0.10E+00   36.5     0.00000039      -128.0723497512 -1.31E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358304268298E-01   1.195701756636E+00   9.952880074313E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890338937577503E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887116717E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190052447738426E-09   5.9376929919059340E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398359623289231E-08   1.6588679295134028E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868537079675534E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141618428032219E+00
+    82 OT DIIS     0.10E+00   37.4     0.00000036      -128.0723497411  1.01E-08
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358305388583E-01   1.195700686367E+00   9.952879601886E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340005761594E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887109633E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190048777792592E-09   5.9376914863033003E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398390573971655E-08   1.6588685615803406E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868543435882273E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141609707026790E+00
+    83 OT DIIS     0.10E+00   37.1     0.00000029      -128.0723497497 -8.55E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358305988345E-01   1.195700994614E+00   9.952879479352E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890339795544008E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887106954E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190038410232212E-09   5.9376898074800999E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398370240318445E-08   1.6588686948164252E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868541561822610E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141609078696971E+00
+    84 OT DIIS     0.10E+00   36.9     0.00000027      -128.0723497407  8.93E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358306488243E-01   1.195700474774E+00   9.952880624293E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890339804269018E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887100566E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190043302107941E-09   5.9376876402341872E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398353769394343E-08   1.6588681652251765E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868541292721829E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141607966279159E+00
+    85 OT DIIS     0.10E+00   36.8     0.00000025      -128.0723497428 -2.12E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358307217558E-01   1.195699824170E+00   9.952881039308E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340107648090E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887101156E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190048062248379E-09   5.9376866981667398E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398350017066554E-08   1.6588685087380313E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868542388988800E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141611559960774E+00
+    86 OT DIIS     0.10E+00   36.6     0.00000020      -128.0723497461 -3.30E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358307938594E-01   1.195699560710E+00   9.952878507196E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340148763102E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887098996E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190054390194495E-09   5.9376857610127409E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398356281513713E-08   1.6588686620368026E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868542385449189E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141609923130480E+00
+    87 OT DIIS     0.10E+00   38.1     0.00000017      -128.0723497541 -7.91E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358307810674E-01   1.195699262609E+00   9.952880345931E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340384564535E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887093184E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190080750209438E-09   5.9376845058501937E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398366116978132E-08   1.6588685019839094E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868543886328780E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141606630938361E+00
+    88 OT DIIS     0.10E+00   37.6     0.00000014      -128.0723497516  2.48E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358308117090E-01   1.195699190266E+00   9.952879831723E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340145294445E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887095529E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190066254027765E-09   5.9376844642485671E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398344240252917E-08   1.6588687452957551E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868542061189530E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141610999503800E+00
+    89 OT DIIS     0.10E+00   37.4     0.00000014      -128.0723497454  6.22E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358308304059E-01   1.195698969168E+00   9.952879858668E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340174514218E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887094314E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190086505668162E-09   5.9376835710472531E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398346947239493E-08   1.6588684929819575E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868542056277818E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141611613571810E+00
+    90 OT DIIS     0.10E+00   37.2     0.00000012      -128.0723497474 -2.02E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358308312430E-01   1.195698681243E+00   9.952879753540E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340375782458E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887093916E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190097080689389E-09   5.9376835916652471E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398359506552984E-08   1.6588687016839096E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868543429860836E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141610027017437E+00
+    91 OT DIIS     0.10E+00   37.8     0.00000011      -128.0723497417  5.67E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358308252269E-01   1.195698793464E+00   9.952879765867E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340265019805E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887094136E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190104902672820E-09   5.9376834272683499E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398358435394503E-08   1.6588687221417256E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868542679096493E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141610617986040E+00
+    92 OT DIIS     0.10E+00   36.9     0.00000010      -128.0723497423 -6.32E-10
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358308231725E-01   1.195698673610E+00   9.952880078280E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340235085048E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887093212E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190114211422188E-09   5.9376830715095352E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398357669428343E-08   1.6588685763658432E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868542511550388E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141610721470990E+00
+    93 OT DIIS     0.10E+00   37.2     0.00000010      -128.0723497408  1.58E-09
+ SKALA_GPW| Atom-composite cross support/maxima   1.926008776013E+00   1.358308215408E-01   1.195698547289E+00   9.952880181921E+00
+ SKALA_GPW| Active atom-composite XC energy  -2.9890340279183857E+01
+ SKALA_GPW| Active atom-composite electrons   5.5999987887094072E+01
+ SKALA_GPW| Active atom-composite density range  -3.4190125220821875E-09   5.9376831449960399E-01
+ SKALA_GPW| Active atom-composite tau range  -2.3398360971217140E-08   1.6588686748118960E+01
+ SKALA_GPW| Active atom-composite tau integral   9.5868542658495528E+01
+ SKALA_GPW| Active atom-composite max gradient   2.4141612076272034E+00
+    94 OT DIIS     0.10E+00   37.3     0.00000009      -128.0723497472 -6.42E-09
+
+  *** SCF run converged in    94 steps ***
+
+
+  Electronic density on regular grids:        -55.9999999992        0.0000000008
+  Core density on regular grids:               56.0000000000       -0.0000000000
+  Total charge density on r-space grids:        0.0000000008
+  Total charge density g-space grids:           0.0000000008
+
+  Overlap energy of the core charge distribution:               0.00000057413267
+  Self energy of the core charge distribution:               -329.20894304383137
+  Core Hamiltonian energy:                                     92.78035050464089
+  Hartree energy:                                             138.27269100085471
+  Exchange-correlation energy:                                  0.00000000000000
+  Dispersion energy:                                           -0.02610850378613
+
+  GAPW_XC| Exc from hard and soft atomic rho1:                -29.89034027918386
+
+  Total energy:                                              -128.07234974717306
+
+  outer SCF iter =    1 RMS gradient =   0.89E-07 energy =       -128.0723497472
+  outer SCF loop converged in   1 iterations or   94 steps
+
+
+ !-----------------------------------------------------------------------------!
+                     Mulliken Population Analysis
+
+ #  Atom  Element  Kind  Atomic population                           Net charge
+       1     O        1          6.498464                             -0.498464
+       2     P        2          3.739575                              1.260425
+       3     O        1          6.546884                             -0.546884
+       4     O        1          6.612184                             -0.612184
+       5     P        2          3.656414                              1.343586
+       6     O        1          6.668620                             -0.668620
+       7     O        1          6.408738                             -0.408738
+       8     O        1          6.495531                             -0.495531
+       9     O        1          6.615317                             -0.615317
+      10     H        3          0.809845                              0.190155
+      11     H        3          0.793758                              0.206242
+      12     H        3          0.673676                              0.326324
+      13     H        3          0.480993                              0.519007
+ # Total charge                             56.000000                  0.000000
+
+ !-----------------------------------------------------------------------------!
+
+ !-----------------------------------------------------------------------------!
+                           Hirshfeld Charges
+
+  #Atom  Element  Kind  Ref Charge     Population                    Net charge
+      1       O      1       6.000          6.696                        -0.696
+      2       P      2       5.000          4.232                         0.768
+      3       O      1       6.000          6.471                        -0.471
+      4       O      1       6.000          6.355                        -0.355
+      5       P      2       5.000          4.227                         0.773
+      6       O      1       6.000          6.556                        -0.556
+      7       O      1       6.000          6.600                        -0.600
+      8       O      1       6.000          6.627                        -0.627
+      9       O      1       6.000          6.603                        -0.603
+     10       H      3       1.000          0.415                         0.585
+     11       H      3       1.000          0.413                         0.587
+     12       H      3       1.000          0.410                         0.590
+     13       H      3       1.000          0.394                         0.606
+
+  Total Charge                                                            0.001
+ !-----------------------------------------------------------------------------!
+
+ ENERGY| Total FORCE_EVAL ( QS ) energy [hartree]           -128.072349747173064
+
+ -------------------------------------------------------------------------------
+ -                                                                             -
+ -                                DBCSR STATISTICS                             -
+ -                                                                             -
+ -------------------------------------------------------------------------------
+ COUNTER                                    TOTAL       BLAS       SMM       ACC
+ flops    14 x    14 x    28             10427200       0.0%    100.0%      0.0%     
+ flops    14 x    28 x    14             35298816       0.0%    100.0%      0.0%     
+ flops    28 x    28 x    28             36879360       0.0%    100.0%      0.0%     
+ flops    29 x    14 x    28             38878560       0.0%    100.0%      0.0%     
+ flops    14 x    29 x    28             38878560       0.0%    100.0%      0.0%     
+ flops    14 x    28 x    28             41357568       0.0%    100.0%      0.0%     
+ flops    29 x    28 x    14            164517696       0.0%    100.0%      0.0%     
+ flops    14 x    28 x    29            164517696       0.0%    100.0%      0.0%     
+ flops    28 x    28 x   317            187390112       0.0%    100.0%      0.0%     
+ flops    14 x    28 x   317            188881280       0.0%    100.0%      0.0%     
+ flops    29 x    28 x    28            192755808       0.0%    100.0%      0.0%     
+ flops    29 x    29 x    28            201335400       0.0%    100.0%      0.0%     
+ flops    29 x    28 x    29            766769976       0.0%    100.0%      0.0%     
+ flops    29 x    28 x   317            880321680       0.0%    100.0%      0.0%     
+ flops inhomo. stacks                           0       0.0%      0.0%      0.0%
+ flops total                         2.948210E+09       0.0%    100.0%      0.0%
+ flops max/rank                      2.948210E+09       0.0%    100.0%      0.0%
+ matmuls inhomo. stacks                         0       0.0%      0.0%      0.0%
+ matmuls total                              52424       0.0%    100.0%      0.0%
+ number of processed stacks                 17506       0.0%    100.0%      0.0%
+ average stack size                                     0.0       3.0       0.0
+ marketing flops                     3.193841E+09
+ -------------------------------------------------------------------------------
+ # multiplications                           2175
+ max memory usage/rank             373.034516E+09
+ # max total images/rank                        1
+ # max 3D layers                                1
+ # MPI messages exchanged                       0
+ -------------------------------------------------------------------------------
+ -                                                                             -
+ -                      DBCSR MESSAGE PASSING PERFORMANCE                      -
+ -                                                                             -
+ -------------------------------------------------------------------------------
+ ROUTINE             CALLS      AVE VOLUME [Bytes]
+ MP_Bcast               15                     12.
+ MP_Allreduce        10519                      8.
+ MP_Alltoall          7208                   5586.
+ MP_ISend             8696                    422.
+ MP_IRecv             8696                    422.
+ -------------------------------------------------------------------------------
+
+ -------------------------------------------------------------------------------
+ -                                                                             -
+ -                                GRID STATISTICS                              -
+ -                                                                             -
+ -------------------------------------------------------------------------------
+ LP    KERNEL             BACKEND                              COUNT     PERCENT
+ 6     collocate ortho    CPU                                 159220      19.03%
+ 6     integrate ortho    CPU                                 157544      18.83%
+ 5     collocate ortho    CPU                                 114665      13.71%
+ 5     integrate ortho    CPU                                 113458      13.56%
+ 8     collocate ortho    CPU                                  62985       7.53%
+ 8     integrate ortho    CPU                                  62322       7.45%
+ 7     collocate ortho    CPU                                  49400       5.91%
+ 7     integrate ortho    CPU                                  48880       5.84%
+ 4     collocate ortho    CPU                                  34200       4.09%
+ 4     integrate ortho    CPU                                  33840       4.05%
+ 0     collocate general  CPU                                     39       0.00%
+ 0     integrate general  CPU                                     13       0.00%
+ -------------------------------------------------------------------------------
+
+ -------------------------------------------------------------------------------
+ -                                                                             -
+ -                          OFFLOAD MEMPOOL STATISTICS                         -
+ -                                                                             -
+ -------------------------------------------------------------------------------
+ Memory consumption                Number of allocations  Used [MiB]  Size [MiB]
+ Host                                                  9         466   268435202
+ -------------------------------------------------------------------------------
+
+ MEMORY| Estimated peak process memory [MiB]                               34390
+
+ -------------------------------------------------------------------------------
+ ----                             MULTIGRID INFO                            ----
+ -------------------------------------------------------------------------------
+ count for grid        1:          31924          cutoff [a.u.]          200.00
+ count for grid        2:          17900          cutoff [a.u.]           66.67
+ count for grid        3:          12874          cutoff [a.u.]           22.22
+ count for grid        4:           2511          cutoff [a.u.]            7.41
+ count for grid        5:             45          cutoff [a.u.]            2.47
+ total gridlevel count  :          65254
+
+ -------------------------------------------------------------------------------
+ -                                                                             -
+ -                         MESSAGE PASSING PERFORMANCE                         -
+ -                                                                             -
+ -------------------------------------------------------------------------------
+
+ ROUTINE             CALLS      AVE VOLUME [Bytes]
+ MP_Group              287
+ MP_Bcast             7959                  37088.
+ MP_Allreduce        28477               13007621.
+ MP_Sync               107
+ MP_comm_split         102
+ -------------------------------------------------------------------------------
+
+
+ -------------------------------------------------------------------------------
+ -                                                                             -
+ -                           R E F E R E N C E S                               -
+ -                                                                             -
+ -------------------------------------------------------------------------------
+ 
+ CP2K version 2026.2 (Development Version), the CP2K developers group (2026).
+ CP2K is freely available from https://www.cp2k.org/ .
+ 
+ M. Iannuzzi, J. Wilhelm, F. Stein, A. Bussy, H. Elgabarty, D. Golze, A. Hehn, 
+ M. Graml, S. Marek, B. Sertcan Gökmen, C. Schran, H. Forbert, R. Z. 
+ Khaliullin, A. Kozhevnikov, M. Taillefumier, R. Meli, V. V. Rybkin, M. Brehm, 
+ R. Schade, O. Schütt, J. V. Pototschnig, H. Mirhosseini, A. Knüpfer, D. Marx, 
+ M. Krack, J. Hutter, T. D. Kühne.
+ J. Phys. Chem. B 130, 1237-1310 (2026).
+ The CP2K Program Package Made Simple.
+ https://doi.org/10.1021/acs.jpcb.5c05851
+
+ L. Wittmann, I. Gordiy, M. Friede, B. Helmich-Paris, S. Grimme, A. Hansen, M. 
+ Bursch.
+ Phys. Chem. Chem. Phys. 26, 21379-21394 (2024).
+ Extension of the D3 and D4 London dispersion corrections to the full actinides 
+ series.
+ https://doi.org/10.1039/d4cp01514b
+
+ T. D. Kühne, M. Iannuzzi, M. Del Ben, V. V. Rybkin, P. Seewald, F. Stein, T. 
+ Laino, R. Z. Khaliullin, O. Schütt, F. Schiffmann, D. Golze, J. Wilhelm, S. 
+ Chulkov, M. H. Bani-Hashemian, V. Weber, U. Borstnik, M. Taillefumier, A. S. 
+ Jakobovits, A. Lazzaro, H. Pabst, T. Müller, R. Schade, M. Guidon, S. 
+ Andermatt, N. Holmberg, G. K. Schenter, A. Hehn, A. Bussy, F. Belleflamme, G. 
+ Tabacchi, A. Glöß, M. Lass, I. Bethune, C. J. Mundy, C. Plessl, M. Watkins, 
+ J. VandeVondele, M. Krack, J. Hutter.
+ J. Chem. Phys. 152, 194103 (2020).
+ CP2K: An electronic structure and molecular dynamics software package - 
+ Quickstep: Efficient and accurate electronic structure calculations.
+ https://doi.org/10.1063/5.0007045
+
+ L. Goerigk, A. Hansen, C. Bauer, S. Ehrlich, A. Najibi, S. Grimme.
+ Phys. Chem. Chem. Phys. 19, 32184-32215 (2017).
+ A look at the density functional theory zoo with the advanced GMTKN55 database 
+ for general main group thermochemistry, kinetics and noncovalent interactions.
+ https://doi.org/10.1039/C7CP04913G
+
+ O. Schuett, P. Messmer, J. Hutter, J. VandeVondele.
+ Electronic Structure Calculations on Graphics Processing Units, 173-190 (2016).
+ GPU-Accelerated Sparse Matrix-Matrix Multiplication for Linear Scaling Density 
+ Functional Theory.
+ https://doi.org/10.1002/9781118670712.ch8
+
+ U. Borstnik, J. VandeVondele, V. Weber, J. Hutter.
+ Parallel Comput. 40, 47-58 (2014).
+ Sparse matrix multiplication: The distributed block-compressed sparse row 
+ library.
+ https://doi.org/10.1016/j.parco.2014.03.012
+
+ S. Grimme, S. Ehrlich, L. Goerigk.
+ J. Comput. Chem. 32, 1456 (2011).
+ Effect of the damping function in dispersion corrected density functional 
+ theory.
+ https://doi.org/10.1002/jcc.21759
+
+ S. Grimme, J. Antony, S. Ehrlich, H. Krieg.
+ J. Chem. Phys. 132, 154104 (2010).
+ A consistent and accurate ab initio parametrization of density functional 
+ dispersion correction (DFT-D) for the 94 elements H-Pu.
+ https://doi.org/10.1063/1.3382344
+
+ J. VandeVondele, J. Hutter.
+ J. Chem. Phys. 127, 114105 (2007).
+ Gaussian basis sets for accurate calculations on molecular systems in gas and 
+ condensed phases.
+ https://doi.org/10.1063/1.2770708
+
+ M. Krack.
+ Theor. Chem. Acc. 114, 145-152 (2005).
+ Pseudopotentials for H to Kr optimized for gradient-corrected 
+ exchange-correlation functionals.
+ https://doi.org/10.1007/s00214-005-0655-y
+
+ M. Frigo, S. G. Johnson.
+ Proc. IEEE 93, 216-231 (2005).
+ The design and implementation of FFTW3.
+ https://doi.org/10.1109/JPROC.2004.840301
+
+ J. VandeVondele, J. Hutter.
+ J. Chem. Phys. 118, 4365-4369 (2003).
+ An efficient orbital transformation method for electronic structure 
+ calculations.
+ https://doi.org/10.1063/1.1543154
+
+ C. Hartwigsen, S. Goedecker, J. Hutter.
+ Phys. Rev. B 58, 3641-3662 (1998).
+ Relativistic separable dual-space Gaussian pseudopotentials from H to Rn.
+ https://doi.org/10.1103/PhysRevB.58.3641
+
+ S. Goedecker, M. Teter, J. Hutter.
+ Phys. Rev. B 54, 1703-1710 (1996).
+ Separable dual-space Gaussian pseudopotentials.
+ https://doi.org/10.1103/PhysRevB.54.1703
+
+
+ -------------------------------------------------------------------------------
+ -                                                                             -
+ -                                T I M I N G                                  -
+ -                                                                             -
+ -------------------------------------------------------------------------------
+ SUBROUTINE                       CALLS  ASD         SELF TIME        TOTAL TIME
+                                MAXIMUM       AVERAGE  MAXIMUM  AVERAGE  MAXIMUM
+ CP2K                                 1  1.0    0.856    0.856 3521.909 3521.909
+ qs_energies                          1  2.0    0.000    0.000 3514.186 3514.186
+ scf_env_do_scf                       1  3.0    0.000    0.000 3508.015 3508.015
+ scf_env_do_scf_inner_loop           94  4.0    0.006    0.006 3474.400 3474.400
+ qs_ks_update_qs_env                 95  5.0    0.001    0.001 3075.976 3075.976
+ rebuild_ks_matrix                   94  6.0    0.000    0.000 3075.964 3075.964
+ qs_ks_build_kohn_sham_matrix        94  7.0    0.017    0.017 3075.964 3075.964
+ calculate_vxc_atom                  94  8.0 1793.484 1793.484 2760.756 2760.756
+ fft_wrap_pw1pw2                   3873  9.5    0.076    0.076  878.815  878.815
+ fft_wrap_pw1pw2_200               1605 10.5  232.778  232.778  808.434  808.434
+ qs_rho_update_rho_low               95  5.0    0.003    0.003  434.165  434.165
+ calculate_rho_elec                 285  6.0   19.272   19.272  432.859  432.859
+ fft3d_s                           3874 11.5  348.849  348.849  348.874  348.874
+ density_rs2pw                      285  7.0    0.030    0.030  333.964  333.964
+ xc_pw_derive                       564  9.5    0.009    0.009  306.904  306.904
+ gaVxcgb_GC                        2444  9.0  259.930  259.930  259.930  259.930
+ xc_pw_divergence                    94  9.0    0.007    0.007  207.396  207.396
+ pw_scatter_s                      1883 12.2  204.372  204.372  204.372  204.372
+ sum_up_and_integrate                94  8.0    0.005    0.005  192.355  192.355
+ integrate_v_rspace                 282  9.0    0.172    0.172  190.669  190.669
+ potential_pw2rs                    282 10.0    1.149    1.149  186.441  186.441
+ calc_tau_atom                     3666  9.0  139.134  139.134  139.134  139.134
+ dgaVtaudgb                        2444  9.0  127.330  127.330  127.330  127.330
+ grid_collocate_task_list           285  7.0   79.623   79.623   79.623   79.623
+ -------------------------------------------------------------------------------
+
+ The number of warnings for this run is : 0
+ 
+ -------------------------------------------------------------------------------
+  **** **** ******  **  PROGRAM ENDED AT                 2026-08-26 06:49:15.304
+ ***** ** ***  *** **   PROGRAM RAN ON                                spark-c86c
+ **    ****   ******    PROGRAM RAN BY                                  kuehne88
+ ***** **    ** ** **   PROGRAM PROCESS ID                               2031505
+  **** **  *******  **  PROGRAM STOPPED IN /home/kuehne88/work/native-skala-spar
+                                           k/diet-production-p25/gapwxc-gth-one-
+                                           center/e36a8c19b3b46e20ed0aa0ce55ea23
+                                           2d3effff75

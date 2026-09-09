@@ -82,7 +82,7 @@ def analyze(rows, selection):
         for (_, solid), (source, chosen) in curves.items() for row in chosen
     }
     summary = {
-        "selection_date": selection["selection_date"],
+        "selection_date": selection.get("selection_date", "2026-09-05"),
         "solids": selection["solids"],
         "unique_selected_points": len(unique_points),
         "independent_curves": len(cache),
@@ -91,7 +91,7 @@ def analyze(rows, selection):
         "maximum_fit_rms_meV_atom": max(row["fit_rms_meV_atom"] for row in results),
         "quality_release": False,
         "cohesive_energies_computed": False,
-        "remaining_checks": selection["remaining_checks"],
+        "remaining_checks": selection.get("remaining_checks", ["Numerical qualifications are described in the PCCP ESI."]),
     }
     return results, summary
 

@@ -1,0 +1,51 @@
+\section{Molecular-Crystal Energies and Numerical Controls}
+\label{sec:x23_si}
+
+\subsection{Geometries and electronic protocol}
+
+The crystal and gas-phase geometries are taken from Sec.~5.6 of the versioned supporting dataset arXiv:2402.13059v1 of Della Pia \emph{et al.}\cite{DellaPia2024X23} Crystal coordinates are wrapped into the supplied cells without relaxation or symmetrization. CO$_2$ and NH$_3$ have cubic cells with $a=5.624$ and 5.1305~\AA{} and four molecules each; urea has a tetragonal cell with $a=b=5.565$, $c=4.684$~\AA{}, and two molecules. The separately supplied gas molecules are rigidly translated into centred cells whose dimensions are the molecular extents plus 25~\AA{}. They use nonperiodic cell/Poisson settings and the analytic isolated-system solver.
+
+All four representations use Skala-1.1 Rev1 on a smoothly partitioned atom-composite quadrature with 150 radial points and the 770-point Lebedev rule. Five multigrids use cutoffs of 800/60~Ry in both phases. AE calculations use UZH 2026.2 TZVPP-MOLOPT-PBE-ae bases and explicit nuclei; GTH calculations use TZV2P-MOLOPT-PBE-GTH and GTH-PBE potentials. One-centre calculations employ the small extended expansion and accurate augmented-XC integration. The AE hard-minus-soft fields are reconstructed before the joint model evaluation. Direct and reconstructed GTH calculations share their Hamiltonian and basis.
+
+D3(BJ) is included once, with $s_6=1$, $s_8=1.9889$, $a_1=0.3981$, $a_2=4.4211$, and interaction cutoff 20 in the executed input convention.\cite{Grimme2010DFTD3,Grimme2011D3BJ} The B3LYP parameter alias selects these damping constants, not the electronic functional. All systems are neutral restricted singlets. OT convergence is $5\times10^{-7}$; complex k-point orbitals use IRAC with the full all-electron preconditioner. No density renormalization, energy alignment, or fitting to the reference lattice energies is applied.
+
+Every crystal uses a Gamma-centred $3^3$ mesh with full K290 point-group reduction. With symmetry tolerance $10^{-6}$, AE and GAPW-XC give 4, 10, and 10 irreducible points for CO$_2$, NH$_3$, and urea. The GTH-direct and GTH-1C calculations use $10^{-4}$ and give 4, 4, and 6. These finite tolerances recognize near-symmetries in the decimal coordinates without moving the atoms. Their numerical sensitivity is distinct from a full-versus-reduced-grid comparison.
+
+\subsection{Paired energies and controls}
+
+Table~\ref{tab:x23_total_si} gives all paired total energies. We use $E_{\rm latt}=E_{\rm solid}/Z-E_{\rm molecule}$ and $1~E_h=2625.4996394799$~kJ~mol$^{-1}$. The electronic DMC references have statistical uncertainties of 0.2, 0.1, and 0.3~kJ~mol$^{-1}$ for CO$_2$, NH$_3$, and urea. Their estimated overall uncertainty is about 2~kJ~mol$^{-1}$, rather than the smaller statistical bars alone.\cite{DellaPia2024X23} Thermal and zero-point corrections to experimental sublimation enthalpies are not added to the DMC energies.
+
+\input{x23-tables-si}
+
+For NH$_3$, CO$_2$, and urea, respectively, the absolute AE errors are 0.544, 7.170, and 16.137~kJ~mol$^{-1}$, or 1.4\%, 24.4\%, and 14.9\% of the DMC binding magnitudes. GAPW-XC/GTH gives 1.874, 8.008, and 5.225~kJ~mol$^{-1}$, or 4.9\%, 27.2\%, and 4.8\%. Thus NH$_3$ has the smallest absolute error in each representation, whereas the CO$_2$/urea ordering depends on both core treatment and the error measure. These errors describe the combined Skala--D3(BJ) protocol at the stated basis and geometry, not separate XC, dispersion, or deformation-energy components.
+
+Refining the paired CO$_2$ quadrature from 150/770 to 200/974 changes $E_{\rm solid}/Z$ by $-0.110687$ and $E_{\rm molecule}$ by $-0.155241$~kJ~mol$^{-1}$. Their difference, $+0.044554$~kJ~mol$^{-1}$, measures the lattice-energy sensitivity. The $5^3$ crystal check uses 11 of 125 irreducible points, compared with four of 27 at $3^3$. For k-point, symmetry-tolerance, and device checks the molecule is unchanged, so the crystal shift per molecule is also the lattice-energy shift.
+
+The accepted 1200~Ry cutoff result concerns only the CO$_2$ crystal and is not a paired binding-energy convergence test. The separate gas-phase calculation lacks a complete runtime-provenance record and is not used. CO$_2$ CPU/CUDA and urea-AE CPU/CUDA controls retain the respective executable and scientific input apart from model device selection. Their sub-0.001~kJ~mol$^{-1}$ changes constrain device effects for these cases. No complete-basis limit, BSSE correction, equilibrium volume, elastic response, or vibrational thermodynamics is inferred from the fixed-geometry energies.
+
+\subsection{Other density-functional approximations}
+
+Table~\ref{tab:x23-dft-context} gives published electronic lattice energies from Della Pia \emph{et al.}\cite{DellaPia2025MLIP} Their study uses hard PAW datasets, a 1000~eV cutoff, and dense system-specific k-point meshes. These are literature protocols, not same-basis native-code controls or Skala reruns.
+
+\begin{table}[htbp]
+\centering
+\caption{Literature electronic lattice energies (kJ~mol$^{-1}$), transcribed from Tables S5, S8, and S22 of Ref.~\citenum{DellaPia2025MLIP}. Dispersion models are part of each method. Different geometrical and numerical protocols preclude interpreting the differences as implementation errors.}
+\label{tab:x23-dft-context}
+\begin{tabular}{lrrr}
+\toprule
+Method & CO$_2$ & NH$_3$ & Urea\\
+\midrule
+PBE & -6.51 & -28.24 & -73.24\\
+PBE+D3 & -25.07 & -43.76 & -109.90\\
+PBE+MBD & -22.74 & -42.10 & -109.11\\
+revPBE+D3 & -22.60 & -38.32 & -99.88\\
+SCAN+rVV10 & -31.47 & -41.69 & -113.55\\
+vdW-DF2 & -32.75 & -39.70 & -103.85\\
+PBE0+MBD (FHI-aims) & -23.74 & -38.99 & -109.40\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bare PBE substantially underbinds; dispersion-inclusive approximations have system-dependent errors. The native Skala--D3(BJ) results therefore do not exhibit an error pattern shared by every functional, and no universal ranking follows from three crystals.
+
+The accompanying benchmark directory contains six source geometries, 24 base inputs, accepted executed inputs, and compact energy and provenance records. Calculations use CP2K revision \texttt{37aedacbb3}, with full source and host-specific executable hashes in the archive. The crystal energies and numerical-control results are retained separately.
