@@ -25,27 +25,35 @@ The accepted 1200~Ry cutoff result concerns only the CO$_2$ crystal and is not a
 
 \subsection{Other density-functional approximations}
 
-Table~\ref{tab:x23-dft-context} gives published electronic lattice energies from Della Pia \emph{et al.}\cite{DellaPia2025MLIP} Their study uses hard PAW datasets, a 1000~eV cutoff, and dense system-specific k-point meshes. These are literature protocols, not same-basis native-code controls or Skala reruns.
+Table~\ref{tab:x23-dft-context} compares the native results with the DMC references and published electronic lattice energies collected by Della Pia \emph{et al.}\cite{DellaPia2024X23,DellaPia2025MLIP} Their plane-wave calculations use hard PAW datasets, a 1000~eV cutoff, and dense system-specific k-point meshes. The PBE0+MBD values use FHI-aims. These are literature protocols, not same-basis native-code controls or Skala reruns. The MAE is the unweighted mean of $|E_{\rm latt}-E_{\rm latt}^{\rm DMC}|$ over CO$_2$, NH$_3$, and urea, using unrounded native energies and the reported literature values.
 
 \begin{table}[htbp]
 \centering
-\caption{Literature electronic lattice energies (kJ~mol$^{-1}$), transcribed from Tables S5, S8, and S22 of Ref.~\citenum{DellaPia2025MLIP}. Dispersion models are part of each method. Different geometrical and numerical protocols preclude interpreting the differences as implementation errors.}
+\small
+\caption{Electronic lattice energies and three-crystal mean absolute errors (MAE), all in kJ~mol$^{-1}$. DMC references are from Ref.~\citenum{DellaPia2024X23}, with statistical uncertainties in parentheses. Native Skala--D3(BJ) values are from Table~\ref{tab:x23_total_si}. Other density-functional values are transcribed from Tables S5, S8, and S22 of Ref.~\citenum{DellaPia2025MLIP}. Each dispersion model is part of the stated method. MAEs summarize only these three crystals and are not full-X23 statistics. Different geometrical and numerical protocols preclude interpreting the differences as implementation errors or a definitive method ranking.}
 \label{tab:x23-dft-context}
-\begin{tabular}{lrrr}
+\begin{tabular}{lrrrr}
 \toprule
-Method & CO$_2$ & NH$_3$ & Urea\\
+Method & CO$_2$ & NH$_3$ & Urea & MAE\\
 \midrule
-PBE & -6.51 & -28.24 & -73.24\\
-PBE+D3 & -25.07 & -43.76 & -109.90\\
-PBE+MBD & -22.74 & -42.10 & -109.11\\
-revPBE+D3 & -22.60 & -38.32 & -99.88\\
-SCAN+rVV10 & -31.47 & -41.69 & -113.55\\
-vdW-DF2 & -32.75 & -39.70 & -103.85\\
-PBE0+MBD (FHI-aims) & -23.74 & -38.99 & -109.40\\
+DMC reference & -29.4(2) & -38.2(1) & -108.5(3) & --\\
+\midrule
+Skala--D3(BJ), GAPW-XC/GTH & -37.41 & -40.07 & -113.73 & 5.04\\
+Skala--D3(BJ), GAPW-AE & -36.57 & -38.74 & -124.64 & 7.95\\
+Skala--D3(BJ), GAPW-GTH direct & -37.38 & -40.09 & -113.80 & 5.06\\
+Skala--D3(BJ), GAPW-GTH one-centre & -37.39 & -40.08 & -113.72 & 5.03\\
+\midrule
+PBE & -6.51 & -28.24 & -73.24 & 22.70\\
+PBE+D3 & -25.07 & -43.76 & -109.90 & 3.76\\
+PBE+MBD & -22.74 & -42.10 & -109.11 & 3.72\\
+revPBE+D3 & -22.60 & -38.32 & -99.88 & 5.18\\
+SCAN+rVV10 & -31.47 & -41.69 & -113.55 & 3.54\\
+vdW-DF2 & -32.75 & -39.70 & -103.85 & 3.17\\
+PBE0+MBD (FHI-aims) & -23.74 & -38.99 & -109.40 & 2.45\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Bare PBE substantially underbinds, whereas dispersion-inclusive approximations have system-dependent errors. The native Skala--D3(BJ) results therefore do not exhibit an error pattern shared by every functional, and no universal ranking follows from three crystals.
+The native pseudopotential MAEs of 5.03--5.06~kJ~mol$^{-1}$ are close to revPBE+D3 (5.18), although several other dispersion-inclusive approximations have smaller three-crystal MAEs. The AE MAE of 7.95~kJ~mol$^{-1}$ is dominated by urea. These aggregates conceal useful material dependence: NH$_3$ is accurate in both native core treatments, and pseudopotential urea errors are close to SCAN+rVV10 and vdW-DF2. CO$_2$ and all-electron urea remain the main limitations. The approximately 2~kJ~mol$^{-1}$ overall DMC uncertainty and the differing computational protocols caution against ranking methods by small residual differences.\cite{DellaPia2024X23} The results support partially successful condensed-phase transfer with a consistent overbinding tendency, not a general conclusion about all molecular crystals.
 
 The accompanying benchmark directory contains six source geometries, 24 base inputs, accepted executed inputs, and compact energy and provenance records. Calculations use CP2K revision \texttt{37aedacbb3}, with full source and host-specific executable hashes in the archive. The crystal energies and numerical-control results are retained separately.
