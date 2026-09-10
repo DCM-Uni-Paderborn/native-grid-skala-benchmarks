@@ -120,7 +120,7 @@ def write_outputs(report, out, tex):
 
 \begin{table}[htbp]
 \centering\small
-\caption{Signed finite-difference minus analytic derivatives. Force errors are in $\mu E_h$/bohr and stress errors in MPa. Columns give the two displacement/strain steps.}
+\caption{Signed FD minus analytic derivatives. Force errors are in $\mu E_h$/bohr and stress errors in MPa. Columns give the two displacement/strain steps.}
 \label{tab:derivatives}
 \begin{tabular}{lrrrr}
 \toprule

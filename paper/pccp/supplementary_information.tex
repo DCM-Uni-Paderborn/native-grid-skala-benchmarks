@@ -25,16 +25,19 @@
 \clearpage
 
 \section{Scope and Notation}
+\label{sec:scope}
 
-The ESI documents the numerical definition and validation of the molecular and condensed-phase comparisons. Self-consistent-field (SCF) convergence, basis resolution, and grid resolution are assessed separately. Electronic occupations and the overlap-matrix trace define the explicitly treated particle number. Integration on the model quadrature provides an additional discretization diagnostic. A nonzero quadrature error is therefore distinct from an incorrect occupation count. The calculations do not renormalize the model density.
+This Electronic Supplementary Information (ESI) documents the numerical definition and validation of the molecular and condensed-phase comparisons. Self-consistent-field (SCF) convergence, basis resolution, and grid resolution are assessed separately. The SCF solvers are orbital transformation (OT) and diagonalization. Electronic occupations and the overlap-matrix trace define the explicitly treated particle number. Integration on the model quadrature provides an additional discretization diagnostic. A nonzero quadrature error is therefore distinct from an incorrect occupation count. The calculations do not renormalize the model density.
 
-GAPW-XC denotes the XC-specific augmented density decomposition, and not merely the name of an input switch. AE denotes all-electron GAPW. GTH-direct and GTH-1C denote pseudopotential GAPW evaluated with direct valence and one-centre reconstructed fields. The mixed molecular and solid protocols combine AE and GTH treatments. They are not hybrid XC functionals. AE and GAPW-XC already contain their intrinsic one-centre terms. The independent with/without comparison applies to the two ordinary pseudopotential GAPW routes.
+The Gaussian and plane-wave (GPW) and Gaussian and augmented-plane-wave (GAPW) methods provide the native density representations. Their exchange--correlation (XC) fields enter Skala. GAPW-XC denotes the XC-specific augmented density decomposition, and not merely the name of an input switch. All-electron (AE) GAPW is denoted GAPW-AE. Goedecker--Teter--Hutter (GTH) effective-core potentials (ECPs) define the pseudopotential Hamiltonian. GTH-direct and GTH-1C denote GAPW-GTH with direct valence and one-centre (1C) reconstructed fields, respectively. The mixed molecular and solid protocols combine AE and GTH treatments. They are not hybrid XC functionals. AE and GAPW-XC already contain their intrinsic one-centre terms. The independent with/without comparison applies to the two ordinary pseudopotential GAPW routes. Compact tables use GX for GAPW-XC/GTH, AE for GAPW-AE, and HD/HOC for the mixed AE/GTH protocols with direct/1C GTH fields, respectively.
 
-Machine-readable reaction values, selected energy--volume curves, molecular-crystal total energies, and exact inputs are organized separately in the accompanying benchmark repository. The numerical tables below are generated from those datasets rather than transcribed from working logs.
+Machine-readable reaction values, selected equation-of-state (EOS) curves, molecular-crystal total energies, and exact inputs are organized separately in the accompanying benchmark repository. The numerical tables below are generated from those datasets rather than transcribed from working logs.
 
 \section{Reconstruction and Derivative Consistency}
+\label{sec:reconstruction}
 
 \subsection{Spin-gradient cross terms}
+\label{sec:spin-gradients}
 
 Write the two reconstructed gradient fields as $\mathbf g_\alpha=\widetilde{\mathbf g}_\alpha+\mathbf g^h_\alpha-\mathbf g^s_\alpha$ and analogously for $\beta$. Their three spin invariants are $\gamma_{\alpha\alpha}=\mathbf g_\alpha^2$, $\gamma_{\beta\beta}=\mathbf g_\beta^2$, and $\gamma_{\alpha\beta}=\mathbf g_\alpha\cdot\mathbf g_\beta$. For example,
 \begin{align}
@@ -47,6 +50,7 @@ Write the two reconstructed gradient fields as $\mathbf g_\alpha=\widetilde{\mat
 The six component vectors admit $\binom{6}{2}=15$ unordered off-diagonal dot products. Three are opposite-spin products within the same smooth, hard, or soft component, while twelve couple different components. Thus ``15 cross terms'' counts all off-diagonal pairs, not fifteen terms all absent from three independent spin-resolved evaluations. Separate smooth/hard/soft evaluations also combine diagonal terms with the wrong nonlinear structure. Reconstructing the fields first avoids this ambiguity and retains the nonlocal coupling of the model, which cannot be recovered by adding local algebraic corrections afterwards.
 
 \subsection{The discrete adjoint and moving grids}
+\label{sec:adjoint}
 
 For regular-grid values $u_g$ and atom-grid interpolation coefficients $I_{ig}$,
 \begin{equation}
@@ -61,11 +65,12 @@ The reverse mapping uses the transpose of the forward interpolation, with the en
          \left.\frac{\partial u_i}{\partial\lambda}\right|_P
  +\left.\frac{\partial E_{\rm xc}}{\partial\lambda}\right|_{u}.
 \end{equation}
-The last term encompasses explicit quadrature, partition, coordinate, and model-environment dependence. The total-energy force and stress additionally use electronic stationarity and the Gaussian-basis/overlap Pulay contributions, including cell and reciprocal-lattice dependence. The XC energy alone is not stationary in $P$. An adjoint test at fixed fields is necessary but does not replace a self-consistent total-energy finite-difference test.
+The last term encompasses explicit quadrature, partition, coordinate, and model-environment dependence. The total-energy force and stress additionally use electronic stationarity and the Gaussian-basis/overlap Pulay contributions, including cell and reciprocal-lattice dependence. The XC energy alone is not stationary in $P$. An adjoint test at fixed fields is necessary but does not replace a self-consistent total-energy finite-difference (FD) test.
 
 \subsection{Finite-difference protocol}
+\label{sec:fd}
 
-For a displaced coordinate $R_{A,x}$, the central estimate is
+For a displaced coordinate $R_{A,x}$, the central FD estimate is
 \begin{equation}
  F^{\rm FD}_{A,x}(h)=-\frac{E(R_{A,x}+h)-E(R_{A,x}-h)}{2h}.
 \end{equation}
@@ -79,45 +84,52 @@ At least two step sizes distinguish truncation error from SCF noise. An SCF thre
 \FloatBarrier
 
 \section{Molecular Numerical Settings and Convergence}
+\label{sec:molecular-settings}
 
 \subsection{Basis, grid, and boundary conditions}
+\label{sec:molecular-basis}
 
-The 70-reaction comparison uses the UZH 2026.2 all-electron TZVPP-MOLOPT-PBE-ae basis and corresponding explicit-electron Hamiltonian where available. The GTH part uses TZV2P-MOLOPT-PBE-GTH bases and GTH-PBE potentials.\cite{Mirhosseini2026UZH,Goedecker1996} The all-GTH protocol uses GAPW-XC throughout. The mixed protocols share the light-element AE energies and use GTH for the retained heavy-element species, including Bi, Te, and I. This differs from the def2-based AE/ECP protocol in the molecular GauXC paper.
+The 70-reaction comparison uses the University of Zurich (UZH) 2026.2 AE TZVPP-MOLOPT-PBE-ae basis and corresponding explicit-electron Hamiltonian where available. The GTH part uses TZV2P-MOLOPT-PBE-GTH bases and GTH-PBE potentials.\cite{Mirhosseini2026UZH,Goedecker1996} The all-GTH protocol uses GAPW-XC throughout. The mixed protocols share the light-element AE energies and use GTH for the retained heavy-element species, including Bi, Te, and I. This differs from the def2-based AE/ECP protocol in the molecular GauXC paper.
 
 The molecule-centred cells add 25~\AA{} to each molecular Cartesian extent. Cell and Poisson periodicity are disabled and the analytic isolated-system Poisson solver is used. The production atom-composite quadrature has 100 radial points and the 434-point Lebedev rule. Plane-wave/relative cutoffs are 400/60~Ry for GAPW-XC/GTH and 640/60~Ry for the shared AE route. The executed inputs document the corresponding GTH one-centre settings. OT and diagonalization thresholds are $5\times10^{-7}$ and $5\times10^{-6}$, respectively. The threshold controls the solver residual, not an energy error in kcal~mol$^{-1}$.
 
 Basis/core changes must be kept distinct from quadrature refinement. The reported AE/GTH differences are not a basis-only convergence series, and no complete-basis limit is inferred from them.
 
 \subsection{Regular-grid cutoff}
+\label{sec:cutoff}
 
 The paired conformational test uses the same two ACONF geometries and evaluates the relative energy within each representation. The 800~Ry result of that representation is the numerical reference. The small difference between the two 800~Ry relative energies is not set to zero: convergence within a representation and agreement between representations are separate questions.
 
 \input{cutoff-table}
 
-At 400~Ry, the deviations from the respective 800~Ry conformational energies are $+0.002152$~kcal~mol$^{-1}$ for GPW and $-0.000181$~kcal~mol$^{-1}$ for GAPW-XC. The faster GAPW-XC convergence supports separating hard local XC structure from the smooth auxiliary grid. This is an observable-specific cutoff test, distinct from comparison with an all-electron Hamiltonian. The complete inputs and outputs accompany the table.
+At 400~Ry, the deviations from the respective 800~Ry conformational energies are $+0.002152$~kcal~mol$^{-1}$ for GPW and $-0.000181$~kcal~mol$^{-1}$ for GAPW-XC. The faster GAPW-XC convergence supports separating hard local XC structure from the smooth auxiliary grid. This is an observable-specific cutoff test, distinct from comparison with an AE Hamiltonian. The complete inputs and outputs accompany the table.
 
 \subsection{Radial and angular quadrature}
+\label{sec:quadrature}
 
 \input{atom-grid-table}
 
 The water test refines radial and angular integration independently of the plane-wave representation. The electron integral is retained as a diagnostic, without rescaling the density. Neither the small water total-energy differences nor the conformational cutoff differences define a universal reaction-energy error bound. Frozen-density calculations that did not satisfy the stated SCF acceptance are not used as converged-energy evidence.
 
 \subsection{Molecular cell padding}
+\label{sec:padding}
 
 Selected matched isolated-system calculations tested added extents of 22, 24, and 25~\AA{}. The maximum species-energy changes are 0.159, 0.189, and 0.348~$\mu E_h$ for 22--24, 24--25, and 22--25~\AA{}, respectively. The corresponding maximum reaction-energy changes are 0.000138, 0.000163, and 0.000298~kcal~mol$^{-1}$. Maximum changes of the atom-grid electron integral are $7.94\times10^{-8}$, $1.43\times10^{-7}$, and $9.72\times10^{-8}$ electrons. These comparisons retain the nonperiodic analytic electrostatic treatment. Old periodic or differently centred cells are not pooled with the final molecular data.
 \FloatBarrier
 
 \section{Molecular Reaction Data and Cross-Code Comparisons}
+\label{sec:molecular-data}
 
 The common set contains 70 reactions from 36 parent subsets of dietGMTKN55.\cite{Gould2018,Goerigk2017} Each reaction has complete accepted species energies in every compared protocol. The remaining cases required longer SCF convergence. The final common set is fixed across methods. No additional reaction is removed on the basis of its reference error. The reaction index and source records in the repository define the selection explicitly.
 
-The same D3 contribution is used in the native reaction comparison. Signed errors are calculation minus the official reference, and MAEs are unweighted averages over the fixed common set. They are not full-100 dietGMTKN55 statistics or WTMAD-2 values. The ozone-containing W4-11/138 reaction remains included, despite its large GTH error. It contributes 58.8\% of the all-GTH squared error. Removing it would lower the 69-reaction GAPW-XC MAE to 2.563~kcal~mol$^{-1}$. This is an influence diagnostic, not the headline result. The direct/one-centre mixed comparison shares all light-element AE energies, and only one retained reaction changes by more than $10^{-9}$~kcal~mol$^{-1}$.
+The same D3 contribution is used in the native reaction comparison. Signed errors are calculation minus the official reference, and mean absolute errors (MAEs) are unweighted averages over the fixed common set. They are not full-100 dietGMTKN55 statistics or type-2 weighted total mean absolute deviations (WTMAD-2). The ozone-containing W4-11/138 reaction remains included, despite its large GTH error. It contributes 58.8\% of the all-GTH squared error. Removing it would lower the 69-reaction GAPW-XC MAE to 2.563~kcal~mol$^{-1}$. This is an influence diagnostic, not the headline result. The direct/one-centre mixed comparison shares all light-element AE energies, and only one retained reaction changes by more than $10^{-9}$~kcal~mol$^{-1}$.
 
 \input{molecular-reactions}
 
 \subsection{Direct comparison with the previous molecular implementation}
+\label{sec:cross-code}
 
-The intersection with the archived GauXC GPW-GTH reaction data contains 65 reactions. On exactly this intersection, the MAEs against the official reference are 2.2193~kcal~mol$^{-1}$ for native GAPW-XC/GTH, 2.1811 for GauXC GPW-GTH, and 1.7800 for either native mixed protocol. Native GAPW-XC minus GauXC has mean signed difference $-0.2248$, mean absolute difference 0.4624, RMS difference 0.7797, and maximum absolute difference 3.9448~kcal~mol$^{-1}$. The largest pairwise difference is DC13/6. These values include the common dispersion convention of the archived comparison.
+The intersection with the archived GauXC GPW-GTH reaction data contains 65 reactions. On exactly this intersection, the MAEs against the official reference are 2.2193~kcal~mol$^{-1}$ for native GAPW-XC/GTH, 2.1811 for GauXC GPW-GTH, and 1.7800 for either native mixed protocol. Native GAPW-XC minus GauXC has mean signed difference $-0.2248$, mean absolute difference (MAD) 0.4624, root-mean-square (RMS) difference 0.7797, and maximum absolute difference 3.9448~kcal~mol$^{-1}$. The largest pairwise difference is DC13/6. These values include the common dispersion convention of the archived comparison.
 
 The prior GauXC manuscript's updated primary AE/ECP--PySCF comparison comprises all 100 reactions, not these 65 or 70.\cite{Poeschel2026MolecularSkala} The online author manuscript synchronized on 9 September 2026 reports the values in Table~\ref{tab:gauxc-context}. They supersede earlier draft aggregates and differ from the first arXiv version. The primary PySCF calculation disables the atomic-radius adjustment in Becke partitioning. Using the default Bragg-radii adjustment increases its cross-code differences. This is quadrature sensitivity, not a change in the reference reaction energies.
 
@@ -141,10 +153,11 @@ The difference of aggregate MAEs, 0.012~kcal~mol$^{-1}$, is not the direct cross
 \FloatBarrier
 
 \section{K-Point and Symmetry Checks}
+\label{sec:symmetry}
 
-Symmetry reduction is a change in the quadrature representation of a fixed Brillouin-zone integral. Correct weights, rotations of orbital components, and Bloch-phase conventions are required. For finite-difference forces, the perturbed geometry may have lower symmetry than the reference geometry. Consistent unreduced sampling or correctly regenerated symmetry is needed. Inversion/time-reversal reduction and full point-group reduction are not interchangeable validation labels.
+Symmetry reduction is a change in the quadrature representation of a fixed Brillouin-zone integral. Correct weights, rotations of orbital components, and Bloch-phase conventions are required. For FD forces, the perturbed geometry may have lower symmetry than the reference geometry. Consistent unreduced sampling or correctly regenerated symmetry is needed. Inversion/time-reversal reduction and full point-group reduction are not interchangeable validation labels.
 
-Seven archived controls compare complete and reduced $4^3$ meshes for C and MgO at unchanged geometry and scientific input. The K290 reduction uses 10 irreducible points from 64, at symmetry tolerance $10^{-8}$. Table~\ref{tab:symmetry} lists the absolute energy difference per reported cell. These controls establish agreement for their specific geometries, meshes, and executables. They are not a proof for all future restarts or all symmetry operations.
+Seven archived controls compare complete and reduced $4^3$ meshes for C and MgO at unchanged geometry and scientific input. The full point-group reduction uses 10 irreducible points from 64, at symmetry tolerance $10^{-8}$. Table~\ref{tab:symmetry} lists the absolute energy difference per reported cell. These controls establish agreement for their specific geometries, meshes, and executables. They are not a proof for all future restarts or all symmetry operations.
 
 \begin{table}[htbp]
 \centering
@@ -174,6 +187,7 @@ The C inputs of both mixed protocols use an AE carbon basis and potential, so th
 \FloatBarrier
 
 \section{Pressure Derivatives and Compressibilities}
+\label{sec:pressure}
 
 The third-order Birch--Murnaghan fit supplies $V_0$, $B_0$, and $B'_0=(\partial B/\partial P)_{P=0}$ in addition to $E_0$. Its energy expression is
 \begin{equation}
@@ -190,6 +204,7 @@ The full-window $B'_0$ values span 2.80--5.26. The largest endpoint-induced chan
 The matched primary literature tables provide $a_0$ and $B_0$ but no consistently curated common $B'_0$ reference set. We report $B'_0$ as a derived model prediction with a fit-window diagnostic, not an accuracy ranking against an invented reference. Compressibility comparisons follow directly from the same matched $B_0$ values. They contain no independent evidence beyond that observable. The three molecular crystals have only paired single-point energies, so no bulk modulus, pressure derivative, elastic tensor, or equilibrium volume is inferred for them.
 
 \section{Reproducibility and Numerical Limits}
+\label{sec:reproducibility}
 
 The molecular, molecular-crystal, and solid subsets use distinct documented protocols and are analysed separately. Each reported energy is linked to its executed input, model and executable versions, SCF convergence, and normal termination record. Replicate calculations count once. The archive distinguishes production energies from the independent numerical controls and preserves the input and source hashes needed to reproduce the reported quantities.
 

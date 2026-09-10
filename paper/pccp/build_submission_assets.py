@@ -31,9 +31,10 @@ def rows(path):
 
 def table(path, caption, spec, header, data, label=None, long=False):
     environment = 'longtable' if long else 'tabular'
-    text = ('{\\small\n\\begin{longtable}{'+spec+'}\n\\caption{'+caption+'}\\\\\n') if long else ('\\begin{table}[htbp]\n\\centering\\small\n\\caption{'+caption+'}\n')
+    caption_text = '\\caption{'+caption+'}'
     if label:
-        text += '\\label{'+label+'}\n'
+        caption_text += '\\label{'+label+'}'
+    text = ('{\\small\n\\begin{longtable}{'+spec+'}\n'+caption_text+'\\\\\n') if long else ('\\begin{table}[htbp]\n\\centering\\small\n'+caption_text+'\n')
     if not long:
         text += '\\begin{tabular}{'+spec+'}\n'
     text += '\\toprule\n' + ' & '.join(header) + '\\\\\n\\midrule\n'
@@ -48,9 +49,9 @@ def molecular_tables():
     data = rows(DIET/'native-protocol-comparison.csv')
     assert len(data) == 70
     assert abs(np.mean([abs(float(r['gapwxc_gth_error_kcal_mol'])) for r in data])-3.5050583176051737)<1e-10
-    table('molecular-reactions.tex', 'Complete common-set reaction energies in kcal mol$^{-1}$. Ref. denotes the official reference. GX is GAPW-XC/GTH, HD/HOC the mixed direct/one-centre protocols. No reference-error outlier is omitted.', 'llrrrr',
+    table('molecular-reactions.tex', r'Complete common-set reaction energies in kcal mol$^{-1}$. Reference values are official benchmark energies. Protocol labels follow Sec.~\ref{sec:scope}. No reference-error outlier is omitted.', 'llrrrr',
           ['Subset','Reaction','Ref.','GX','HD','HOC'],
-          [[r['subset'].replace('_',r'\_'),r['reaction_id']]+[f"{float(r[k]):.5f}" for k in ['reference_kcal_mol','gapwxc_gth_kcal_mol','hybrid_ae_gth_direct_kcal_mol','hybrid_ae_gth_one_center_kcal_mol']] for r in data],long=True)
+          [[r['subset'].replace('_',r'\_'),r['reaction_id']]+[f"{float(r[k]):.5f}" for k in ['reference_kcal_mol','gapwxc_gth_kcal_mol','hybrid_ae_gth_direct_kcal_mol','hybrid_ae_gth_one_center_kcal_mol']] for r in data],label='tab:molecular-reactions',long=True)
     cutoff = rows(REPO/'convergence/cutoff/aconf8-b200/results.csv')
     pairs = {}
     for row in cutoff:
@@ -103,7 +104,7 @@ def eos_observables():
     (HERE/'eos-pressure-derivative-sensitivity.json').write_text(json.dumps({f'{a}/{b}':v for (a,b),v in cache.items()},indent=2)+'\n')
     table('eos-extra-table.tex',r'Additional predictions from the existing EOS data. $\kappa_0$ is in $10^{-3}$ GPa$^{-1}$. $V_0$ is the eight-atom cell volume in \AA$^3$. The endpoint column is the largest absolute change of $B_0^\prime$ after removing either endpoint. A dagger means at least one omitted-window minimum is no longer bracketed.',
           'llrrrrr',['Method','Solid',r'$V_0$',r'$B_0$/GPa',r'$B_0^\prime$',r'$10^3\kappa_0$',r'max. $|\Delta B_0^\prime|$'],
-          [[LABELS[r['method']],r['solid'],f"{r['V0_A3_cell']:.4f}",f"{r['B0_GPa']:.2f}",f"{r['B0_prime']:.3f}",f"{1000*r['compressibility_GPa_inverse']:.3f}",f"{r['max_endpoint_delta_B0_prime']:.3f}"+(r'$^\dagger$' if not r['both_omitted_minima_bracketed'] else '')] for r in results],long=True)
+          [[LABELS[r['method']],r['solid'],f"{r['V0_A3_cell']:.4f}",f"{r['B0_GPa']:.2f}",f"{r['B0_prime']:.3f}",f"{1000*r['compressibility_GPa_inverse']:.3f}",f"{r['max_endpoint_delta_B0_prime']:.3f}"+(r'$^\dagger$' if not r['both_omitted_minima_bracketed'] else '')] for r in results],label='tab:eos-extra',long=True)
     print('Bprime range',min(r['B0_prime'] for r in results),max(r['B0_prime'] for r in results))
     print('Maximum Bprime endpoint sensitivity',max(results,key=lambda r:r['max_endpoint_delta_B0_prime']))
 

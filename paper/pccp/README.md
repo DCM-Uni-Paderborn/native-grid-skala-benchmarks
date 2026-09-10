@@ -47,6 +47,16 @@ dependencies. It reads the curated repository datasets and does not launch CP2K.
 `source-data-sha256.json` identifies numerical inputs to the table generator.
 The handwritten analysis includes remain separate from generated tables.
 
+The shared `latexmkrc` first refreshes the independent ESI in `esi-build/`.
+The main text imports its labels with an `esi-` prefix, so section and table
+numbers remain synchronized when the ESI changes. PDF links target
+`supplementary_information.pdf`. Compile in a separate staging copy to keep
+temporary build products out of the curated repository inventory.
+
+Abbreviations are defined independently in the abstract, main text, and ESI.
+Table and figure captions use definitions introduced in the preceding prose.
+Established names such as PBE, D3, BJ, CP2K, and GauXC are not expanded.
+
 The script `run_derivative_checks.py` is the separately authorized derivative
 test driver. Its runtime paths identify the preserved Terok production stack;
 they must be adapted, with matching source/model/data provenance, for a new host.
