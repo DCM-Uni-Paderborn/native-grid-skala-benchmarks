@@ -61,12 +61,12 @@ def main():
                 for m in selection['methods']])
         symbol = '$a_0$' if prop == 'a0_A' else '$B_0$'
         lines.append(table('Selected ' + symbol + ' values (' + unit + r'). Experimental references follow Ref.~\citenum{Goldzak2022Solids}. '
-                           r'BN and C reuse the AE curve for HD and HOC; these entries are not independent calculations.',
+                           r'BN and C reuse the AE curve for HD and HOC. These entries are not independent calculations.',
                            'tab:selected-' + prop, ['Solid', 'Experiment', 'GX', 'AE', 'HD', 'HOC'], rows))
     fit_rows = [[LABELS[r['method']], r['solid'], r['n_points'], f"{float(r['B0_prime']):.3f}",
                  f"{float(r['fit_rms_meV_atom']):.4f}"] for r in fits if r['method'] == r['source_method']]
     for i in range(0, len(fit_rows), 18):
-        lines.append(table(r'EOS fit diagnostics, part ' + str(i//18+1) + r'. All full-window minima are bracketed; RMS residuals are in meV per atom.',
+        lines.append(table(r'EOS fit diagnostics, part ' + str(i//18+1) + r'. All full-window minima are bracketed. RMS residuals are in meV per atom.',
                            'tab:eos-fit-' + str(i//18+1), ['Method', 'Solid', '$N_V$', "$B'_0$", 'RMS'], fit_rows[i:i+18]))
     stats = read_rows(ROOT / 'results/eos-literature-matched-statistics.csv')
     for source, (citation, scope) in SOURCES.items():
@@ -82,7 +82,7 @@ def main():
                          f"{float(b['MAE']):.2f}" if b else '--'])
         lines.append(table(r'Matched comparison with Ref.~\citenum{' + citation + '}: ' + scope +
                            r'. Every row uses the identical intersection and the Goldzak static-lattice experimental reference. '
-                           r'MAE($a_0$) is in \AA{} and MAE($B_0$) in GPa; -- denotes unavailable data, not zero error. '
+                           r'MAE($a_0$) is in \AA{} and MAE($B_0$) in GPa. A dash denotes unavailable data, not zero error. '
                            r'Native rows retain the numerical qualifications discussed in the text.',
                            'tab:literature-' + source, ['Method', '$N$', 'MAE($a_0$)', 'MAE($B_0$)'], rows))
     # Audit actual archived inputs; do not infer production settings from templates.
@@ -112,7 +112,7 @@ def main():
         description = '; '.join('$' + k + '^3$: ' + ','.join(points) for k, points in sorted(groups.items()))
         grid_rows.append([s, description])
     lines.append(table(r'Actual Gamma-centered k meshes by volume index. Indices 01--10 refer to the original evenly spaced volume ratios 0.90--1.10. '
-                       r'Each selected volume uses the same mesh in all representations; the mesh can change along an EOS.',
+                       r'Each selected volume uses the same mesh in all representations, but the mesh can change along an EOS.',
                        'tab:actual-k-meshes', ['Solid', 'Mesh and volume indices'], grid_rows))
     (output / 'periodic-tables-si.tex').write_text('\n'.join(lines))
     print(json.dumps({'tables_generated': 11, 'actual_inputs_audited': len(settings), 'same_mesh_per_paired_volume': True}))

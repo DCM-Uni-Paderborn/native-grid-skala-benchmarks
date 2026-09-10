@@ -48,7 +48,7 @@ def molecular_tables():
     data = rows(DIET/'native-protocol-comparison.csv')
     assert len(data) == 70
     assert abs(np.mean([abs(float(r['gapwxc_gth_error_kcal_mol'])) for r in data])-3.5050583176051737)<1e-10
-    table('molecular-reactions.tex', 'Complete common-set reaction energies in kcal mol$^{-1}$. Ref. denotes the official reference; GX is GAPW-XC/GTH, HD/HOC the mixed direct/one-centre protocols. No reference-error outlier is omitted.', 'llrrrr',
+    table('molecular-reactions.tex', 'Complete common-set reaction energies in kcal mol$^{-1}$. Ref. denotes the official reference. GX is GAPW-XC/GTH, HD/HOC the mixed direct/one-centre protocols. No reference-error outlier is omitted.', 'llrrrr',
           ['Subset','Reaction','Ref.','GX','HD','HOC'],
           [[r['subset'].replace('_',r'\_'),r['reaction_id']]+[f"{float(r[k]):.5f}" for k in ['reference_kcal_mol','gapwxc_gth_kcal_mol','hybrid_ae_gth_direct_kcal_mol','hybrid_ae_gth_one_center_kcal_mol']] for r in data],long=True)
     cutoff = rows(REPO/'convergence/cutoff/aconf8-b200/results.csv')
@@ -66,14 +66,14 @@ def molecular_tables():
         vals = [energies[m,c] for m in ['GPW','GAPW_XC']]
         errs = [energies[m,c]-energies[m,800] for m in ['GPW','GAPW_XC']]
         data.append([str(c)]+[f'{v:.6f}' for v in vals+errs])
-    table('cutoff-table.tex','Conformational energy of the paired ACONF geometries in kcal mol$^{-1}$. Each error is relative to its own 800 Ry result; the relative cutoff is 60 Ry.', 'rrrrr',
+    table('cutoff-table.tex','Conformational energy of the paired ACONF geometries in kcal mol$^{-1}$. Each error is relative to its own 800 Ry result. The relative cutoff is 60 Ry.', 'rrrrr',
           ['Cutoff/Ry','GPW','GAPW-XC',r'$\Delta$GPW',r'$\Delta$GAPW-XC'],data)
     grid = sorted(rows(REPO/'convergence/atom-grid/results/h2o-grid-results.csv'),
                   key=lambda r: (int(r['radial_grid']), int(r['lebedev_grid'])))
     reference = next(r for r in grid if r['radial_grid']=='200' and r['lebedev_grid']=='974')
     energy = float(reference['total_energy_ha'])
     data = [[r['radial_grid'],r['lebedev_grid'],f"{(float(r['total_energy_ha'])-energy)*1e6:+.3f}",f"{float(r['composite_electrons'])-8:+.3e}"] for r in grid if r['converged']=='true']
-    table('atom-grid-table.tex','Self-consistent GPW water quadrature test at 800/60 Ry. Total-energy shifts are relative to 200/974 and are in microhartree; electron-integral errors refer to eight explicit electrons.', 'rrrr', ['Radial','Angular',r'$\Delta E/\mu E_h$',r'$\Delta N/e$'],data)
+    table('atom-grid-table.tex','Self-consistent GPW water quadrature test at 800/60 Ry. Total-energy shifts are relative to 200/974 and are in microhartree. Electron-integral errors refer to eight explicit electrons.', 'rrrr', ['Radial','Angular',r'$\Delta E/\mu E_h$',r'$\Delta N/e$'],data)
 
 
 def eos_observables():
@@ -101,7 +101,7 @@ def eos_observables():
                         'both_omitted_minima_bracketed':all(r['minimum_bracketed'] for r in cache[cachekey])})
     write_rows(HERE/'eos-additional-observables.csv',list(results[0]),results)
     (HERE/'eos-pressure-derivative-sensitivity.json').write_text(json.dumps({f'{a}/{b}':v for (a,b),v in cache.items()},indent=2)+'\n')
-    table('eos-extra-table.tex',r'Additional predictions from the existing EOS data. $\kappa_0$ is in $10^{-3}$ GPa$^{-1}$; $V_0$ is the eight-atom cell volume in \AA$^3$. The endpoint column is the largest absolute change of $B_0^\prime$ after removing either endpoint. A dagger means at least one omitted-window minimum is no longer bracketed.',
+    table('eos-extra-table.tex',r'Additional predictions from the existing EOS data. $\kappa_0$ is in $10^{-3}$ GPa$^{-1}$. $V_0$ is the eight-atom cell volume in \AA$^3$. The endpoint column is the largest absolute change of $B_0^\prime$ after removing either endpoint. A dagger means at least one omitted-window minimum is no longer bracketed.',
           'llrrrrr',['Method','Solid',r'$V_0$',r'$B_0$/GPa',r'$B_0^\prime$',r'$10^3\kappa_0$',r'max. $|\Delta B_0^\prime|$'],
           [[LABELS[r['method']],r['solid'],f"{r['V0_A3_cell']:.4f}",f"{r['B0_GPa']:.2f}",f"{r['B0_prime']:.3f}",f"{1000*r['compressibility_GPa_inverse']:.3f}",f"{r['max_endpoint_delta_B0_prime']:.3f}"+(r'$^\dagger$' if not r['both_omitted_minima_bracketed'] else '')] for r in results],long=True)
     print('Bprime range',min(r['B0_prime'] for r in results),max(r['B0_prime'] for r in results))
