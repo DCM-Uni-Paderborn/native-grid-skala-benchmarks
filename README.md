@@ -9,7 +9,7 @@ on 10 September 2026.
 
 | Paper / ESI content | Supporting data |
 | --- | --- |
-| 70 common dietGMTKN55 reactions; 65-reaction GauXC intersection | [Molecular data](benchmarks/dietGMTKN55/production-p25/paper-common-70), 332 unique species-route executions |
+| 70 common dietGMTKN55 reactions; separate 65-reaction GauXC GPW-GTH and 70-reaction GauXC AE/ECP--PySCF comparisons | [Molecular data](benchmarks/dietGMTKN55/production-p25/paper-common-70), 332 unique native species-route executions and a pinned collaborator-data extract |
 | CO2, NH3 and urea, four representations | [Molecular crystals](benchmarks/X23-mini), 24 base executions and seven accepted controls |
 | Ten-solid structural comparison, in the ESI | [LC10](benchmarks/Goldzak12), 352 unique energies, 36 independent EOS, 40 method-solid comparisons |
 | ACONF cutoff and water radial/angular quadrature | [Cutoff](convergence/cutoff/aconf8-b200) and [quadrature](convergence/atom-grid) |

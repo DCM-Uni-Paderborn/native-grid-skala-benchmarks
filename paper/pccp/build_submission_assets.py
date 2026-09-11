@@ -77,6 +77,45 @@ def molecular_tables():
     table('atom-grid-table.tex','Self-consistent GPW water quadrature test at 800/60 Ry. Total-energy shifts are relative to 200/974 and are in microhartree. Electron-integral errors refer to eight explicit electrons.', 'rrrr', ['Radial','Angular',r'$\Delta E/\mu E_h$',r'$\Delta N/e$'],data)
 
 
+def molecular_interface_tables():
+    data = rows(DIET/'molecular-interface-comparison.csv')
+    summary_path = DIET/'molecular-interface-summary.json'
+    sources.extend([summary_path, DIET/'gauxc-source-common-70.json'])
+    summary = json.loads(summary_path.read_text())
+    labels = {'gapwxc_gth': 'Native GX', 'hybrid_ae_gth_direct': 'Native HD',
+              'hybrid_ae_gth_one_center': 'Native HOC', 'gauxc_ae': 'GauXC AE/ECP',
+              'pyscf_unit': 'PySCF U', 'pyscf_bragg': 'PySCF B',
+              'gauxc_gpw': 'GauXC GPW-GTH'}
+    metrics = summary['reference_errors']
+    selected = [(labels[m], metrics[m]) for m in labels if m != 'gauxc_gpw']
+    selected.extend([('Native GX', summary['native_65_reference_errors']['gapwxc_gth']),
+                     (labels['gauxc_gpw'], metrics['gauxc_gpw'])])
+    table('molecular-interface-summary.tex',
+          r'Reference errors on reaction-matched populations, in kcal mol$^{-1}$. The first six rows use the fixed native 70-reaction set. The last two use its 65-reaction intersection with converged GauXC GPW-GTH data. Each source retains its recorded dispersion contribution.',
+          'lrrrrr', ['Method', '$N$', 'MAE', 'Median absolute', 'RMS', 'Maximum absolute'],
+          [[name, s['n']]+[f"{s[k]:.4f}" for k in ['mean_absolute','median_absolute','root_mean_square','maximum_absolute']] for name,s in selected],
+          label='tab:interface-summary')
+    pairs = summary['pairwise_differences']
+    order = ['gapwxc_gth_minus_gauxc_gpw', 'hybrid_ae_gth_direct_minus_gauxc_ae',
+             'hybrid_ae_gth_one_center_minus_gauxc_ae', 'hybrid_ae_gth_direct_minus_pyscf_unit',
+             'gauxc_ae_minus_pyscf_unit']
+    values = []
+    for key in order:
+        a,b = key.split('_minus_')
+        s = pairs[key]['as_reported']
+        values.append([labels[a]+' / '+labels[b], s['n']]+[f"{s[k]:.4f}" for k in ['mean_absolute','root_mean_square','maximum_absolute']]+[f"{pairs[key]['electronic_only']['mean_absolute']:.4f}"])
+    table('molecular-interface-pairs.tex',
+          r'Direct reaction-energy differences, in kcal mol$^{-1}$. The first three difference statistics use the recorded total energies. The last column removes each source\textquotesingle s own D3 contribution to isolate its influence on the comparison.',
+          'lrrrrr', ['Method pair', '$N$', 'MAD', 'RMS', 'Maximum', 'Electronic MAD'], values,
+          label='tab:interface-pairs')
+    methods = ['reference_kcal_mol','gauxc_gpw','gauxc_ae','pyscf_unit','pyscf_bragg']
+    table('molecular-interface-reactions.tex',
+          r'Reaction-resolved collaborator energies on the native common set, in kcal mol$^{-1}$. Reaction identifiers and official references match Table~\ref{tab:molecular-reactions}. A dash denotes an unavailable converged GPW-GTH value, not a zero. Recorded dispersion contributions are included.',
+          'llrrrrr', ['Subset','Reaction','Ref.','GauXC GPW','GauXC AE','PySCF U','PySCF B'],
+          [[r['subset'].replace('_',r'\_'),r['reaction_id']]+[f"{float(r[m]):.5f}" if r[m] else '--' for m in methods] for r in data],
+          label='tab:interface-reactions',long=True)
+
+
 def eos_observables():
     selection_path = LC/'protocol/paper-eos-selection.json'
     sources.append(selection_path)
@@ -202,6 +241,6 @@ def toc_graphic():
 
 
 if __name__ == '__main__':
-    molecular_tables();copied_tables();eos_observables();figures();eos_figure();toc_graphic()
+    molecular_tables();molecular_interface_tables();copied_tables();eos_observables();figures();eos_figure();toc_graphic()
     manifest={str(p.relative_to(REPO)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(sources))}
     (HERE/'source-data-sha256.json').write_text(json.dumps(manifest,indent=2)+'\n')

@@ -9,6 +9,8 @@ from pathlib import Path
 import re
 import statistics
 
+from compare_molecular_interfaces import calculate
+
 ROOT = Path(__file__).resolve().parents[1]
 HA_KCAL = 627.5094740631
 HA_KJ = 2625.4996394799
@@ -106,7 +108,28 @@ def molecular():
     assert len(gauxc) == 65
     difference = [float(r['gapwxc_gth_kcal_mol'])-float(r['paper_gpw_gth_with_current_d3_kcal_mol']) for r in gauxc]
     close(statistics.mean(map(abs,difference)), .4624, .00005)
-    return {'reactions':70,'unique_species_routes':332,'GauXC_intersection':65,'metrics':metrics}
+    source = read(data/'gauxc-source-common-70.json')
+    comparison, summary = calculate(source)
+    assert summary == read(data/'molecular-interface-summary.json')
+    recorded = rows(data/'molecular-interface-comparison.csv')
+    assert len(recorded) == len(comparison) == 70
+    for calculated, archived in zip(comparison, recorded):
+        for key, value in calculated.items():
+            if isinstance(value, (float, int)):
+                close(value, archived[key])
+            else:
+                assert archived[key] == ('' if value is None else value)
+    for reaction in source['reactions']:
+        for spec in reaction['species']:
+            assert spec['maximum_centered_coordinate_difference_angstrom'] < source['coordinate_match_tolerance_angstrom']
+            for method in spec['methods'].values():
+                if method['converged']:
+                    close(method['electronic_energy_ha']+method['dispersion_energy_ha'], method['total_energy_ha'])
+                for field in ['input_sha256','output_sha256']:
+                    assert re.fullmatch('[0-9a-f]{64}', method[field])
+    return {'reactions':70,'unique_species_routes':332,'GauXC_GPW_intersection':65,
+            'GauXC_AE_PySCF_intersection':70,'metrics':metrics,
+            'interface_pairs':summary['pairwise_differences']}
 
 
 def solid_eos():

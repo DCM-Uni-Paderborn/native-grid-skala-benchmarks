@@ -25,6 +25,14 @@ editing. The earlier molecular GauXC manuscript is not modified.
 - Existing benchmark energies are reused. Additional finite-difference checks
   are distinct from the production benchmarks.
 
+The reaction-resolved molecular comparison added on 11 September 2026 uses
+Stefano Battaglia's deposited species energies. Native GAPW-XC/GTH is compared
+with GauXC GPW-GTH on 65 reactions, separately from mixed native AE/GTH versus
+GauXC AE/def2-ECP and PySCF on 70. The ESI includes every selected reaction,
+reference errors, direct differences and a dispersion-sensitivity check.
+No previous production energies or selections were changed. The older GauXC
+paper and its repository were not edited for this comparison.
+
 The EOS analysis uses 352 unique energies and 36 independent curves, yielding
 40 method/material entries after explicitly identified AE reuse. No EOS is
 inferred from the three molecular-crystal single-point pairs.
@@ -34,6 +42,7 @@ inferred from the three molecular-crystal single-point pairs.
 From this directory, run:
 
 ```bash
+python3 -B ../../scripts/compare_molecular_interfaces.py --write
 python3 build_submission_assets.py
 python3 analyse_derivative_checks.py \
   --report ../../convergence/derivatives/periodic-water-20260909/validated-results.json \
