@@ -129,21 +129,23 @@ The same D3 contribution is used in the native reaction comparison. Signed error
 \subsection{Direct comparison with the previous molecular implementation}
 \label{sec:cross-code}
 
+All PySCF/Skala reference values use Becke partitioning without an atomic-radius adjustment.
+
 The source is the reaction-resolved collaborator dataset archived with the earlier molecular GauXC study, at repository revision \texttt{25e80ba}.\cite{Poeschel2026MolecularSkala,Battaglia2026DietData} Each native reaction is matched by its species geometries after translation, charge, multiplicity, and signed stoichiometric coefficients. Official references and weights are checked independently. All 70 retained reactions have complete GauXC AE/ECP and PySCF energies. Converged GauXC GPW-GTH energies cover 65 of them. Source reaction numbers differ from the native benchmark identifiers, and the deposited mapping resolves those aliases explicitly.
 
 The comparisons are separated by core treatment. Native GAPW-XC/GTH is compared with GauXC GPW-GTH on the 65-reaction intersection. The mixed native AE/GTH protocols are compared with GauXC AE/def2-ECP and PySCF on the full 70-reaction common set. The earlier AE/ECP calculations use def2-TZVP/ma-def2-TZVP bases, with def2 ECPs for the heavier elements, rather than the native UZH basis/core protocol specified in Sec.~\ref{sec:molecular-basis}. This is the principal protocol distinction: the finite Gaussian space changes and, where ECPs differ, so does the core Hamiltonian. The remaining reaction-energy differences are consistent with these basis/core and numerical integration choices. The earlier GPW-GTH calculations instead use a SCAN-optimized basis/pseudopotential combination, whereas the native GTH protocol uses its PBE-optimized counterpart. The comparison complements the numerical consistency tests in Secs.~\ref{sec:reconstruction} and \ref{sec:molecular-settings}, which validate the native implementation.
 
-The primary PySCF calculation disables the atomic-radius adjustment in Becke partitioning. The alternative uses the default Bragg-radii adjustment. The following tables label them PySCF U and PySCF B, respectively, and abbreviate GauXC AE/def2-ECP as GauXC AE and GauXC GPW-GTH as GauXC GPW where space is limited. Mean absolute differences (MADs) refer to direct differences between calculated reaction energies, not differences of reference MAEs. Root-mean-square (RMS) errors and differences are reported separately.
+The following tables abbreviate GauXC AE/def2-ECP as GauXC AE and GauXC GPW-GTH as GauXC GPW where space is limited. Mean absolute differences (MADs) refer to direct differences between calculated reaction energies, not differences of reference MAEs. Root-mean-square (RMS) errors and differences are reported separately.
 
 \input{molecular-interface-summary}
 
-On the 65-reaction pseudopotential intersection, native GAPW-XC/GTH and GauXC GPW-GTH have reference MAEs of 2.2193 and 2.1811~kcal~mol$^{-1}$. Their direct MAD is 0.4631~kcal~mol$^{-1}$, with signed mean $-0.2250$, RMS difference 0.7799, and maximum absolute difference 3.9442 for DC13/6. By contrast, on all 70 reactions the mixed native protocols have reference MAEs of 1.8905, compared with 1.2378 for GauXC AE/ECP and 1.2314 for primary PySCF. The Mixed D--GauXC AE/ECP MAD is 1.8889~kcal~mol$^{-1}$, with signed mean $+0.6494$ and median absolute difference 0.7151. The largest difference, $+18.6055$~kcal~mol$^{-1}$ for W4-11/138, remains included. No outlier is removed from either intersection.
+On the 65-reaction pseudopotential intersection, native GAPW-XC/GTH and GauXC GPW-GTH have reference MAEs of 2.2193 and 2.1811~kcal~mol$^{-1}$. Their direct MAD is 0.4631~kcal~mol$^{-1}$, with signed mean $-0.2250$, RMS difference 0.7799, and maximum absolute difference 3.9442 for DC13/6. By contrast, on all 70 reactions the mixed native protocols have reference MAEs of 1.8905, compared with 1.2378 for GauXC AE/ECP and 1.2314 for PySCF. The Mixed D--GauXC AE/ECP MAD is 1.8889~kcal~mol$^{-1}$, with signed mean $+0.6494$ and median absolute difference 0.7151. The largest difference, $+18.6055$~kcal~mol$^{-1}$ for W4-11/138, remains included. No outlier is removed from either intersection.
 
 \input{molecular-interface-pairs}
 
 All headline comparisons retain the total energies as recorded, including each source's separately evaluated D3(BJ) correction. The source calculations use the B3LYP5 dispersion convention, but the recorded corrections are not numerically identical across every protocol. For native Mixed D versus GauXC AE/ECP, the D3 reaction-contribution differences have a MAD of only 0.001396~kcal~mol$^{-1}$ and a maximum of 0.014549. Removing each source's own correction changes the direct MAD from 1.8889 to 1.8880~kcal~mol$^{-1}$. Dispersion bookkeeping therefore does not explain the larger native--GauXC differences. For native GAPW-XC/GTH versus GauXC GPW-GTH, the corresponding MAD changes from 0.4631 to 0.4624. The latter reproduces the earlier comparison in which the same native D3 term was added to both electronic reaction energies.
 
-There is one non-negligible recorded GauXC AE/ECP--PySCF dispersion mismatch within the retained set: HEAVY28/5 differs by $+0.419041$~kcal~mol$^{-1}$ in its D3 reaction contribution. Its origin is not established, and neither source value is overwritten. Across the 70 reactions, the GauXC--primary-PySCF direct MAD is 0.04560 for the recorded totals and 0.03999 for the electronic contributions alone. Their total-energy differences should therefore not all be attributed to quadrature. The comparison files preserve electronic, dispersion, and total energies separately, together with input/output hashes and the pinned source revision.
+There is one non-negligible recorded GauXC AE/ECP--PySCF dispersion mismatch within the retained set: HEAVY28/5 differs by $+0.419041$~kcal~mol$^{-1}$ in its D3 reaction contribution. Its origin is not established, and neither source value is overwritten. Across the 70 reactions, the GauXC--PySCF direct MAD is 0.04560 for the recorded totals and 0.03999 for the electronic contributions alone. Their total-energy differences should therefore not all be attributed to quadrature. The comparison files preserve electronic, dispersion, and total energies separately, together with input/output hashes and the pinned source revision.
 
 \input{molecular-interface-reactions}
 
@@ -155,7 +157,7 @@ For context, the prior GauXC manuscript's updated primary AE/ECP--PySCF comparis
 \label{tab:gauxc-context}
 \begin{tabular}{lrr}
 \toprule
-Metric & CP2K/GauXC AE/ECP & Microsoft PySCF/Skala\\
+Metric & CP2K/GauXC AE/ECP & Microsoft PySCF\\
 \midrule
 MAE against reference & 1.255 & 1.243\\
 WTMAD-2 & 3.486 & 3.459\\

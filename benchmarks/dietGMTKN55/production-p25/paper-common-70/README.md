@@ -11,9 +11,13 @@ The molecular interface comparison separates the core protocols:
 
 - Native GAPW-XC/GTH versus GauXC GPW-GTH: 65 shared reactions, reference
   MAEs 2.219302 and 2.181098 kcal/mol, direct MAD 0.463144 kcal/mol.
-- Native mixed AE/GTH versus GauXC AE/def2-ECP and primary PySCF: all 70
+- Native mixed AE/GTH versus GauXC AE/def2-ECP and PySCF: all 70
   reactions. Reference MAEs are 1.890482/1.890510, 1.237761 and 1.231410
   kcal/mol, respectively. Mixed-direct versus GauXC AE/ECP has MAD 1.888876.
+
+PySCF is the only PySCF variant used here. It denotes the primary reference
+with the atomic-radius adjustment in Becke partitioning disabled (unit radii).
+The selected extract, comparison files and paper tables all use this variant.
 
 `gauxc-source-common-70.json` contains only the selected collaborator species
 values and their reaction mapping. The source is Stefano Battaglia's dataset

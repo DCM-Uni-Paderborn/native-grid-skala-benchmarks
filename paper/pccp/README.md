@@ -28,7 +28,9 @@ editing. The earlier molecular GauXC manuscript is not modified.
 The reaction-resolved molecular comparison added on 11 September 2026 uses
 Stefano Battaglia's deposited species energies. Native GAPW-XC/GTH is compared
 with GauXC GPW-GTH on 65 reactions, separately from mixed native AE/GTH versus
-GauXC AE/def2-ECP and PySCF on 70. The ESI includes every selected reaction,
+GauXC AE/def2-ECP and PySCF on 70. PySCF is the sole PySCF reference in
+this package, with the atomic-radius adjustment in Becke partitioning disabled.
+The ESI includes every selected reaction,
 reference errors, direct differences and a dispersion-sensitivity check.
 No previous production energies or selections were changed. The older GauXC
 paper and its repository were not edited for this comparison.

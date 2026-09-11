@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 import statistics
 
-from compare_molecular_interfaces import calculate
+from compare_molecular_interfaces import EXTERNAL, calculate
 
 ROOT = Path(__file__).resolve().parents[1]
 HA_KCAL = 627.5094740631
@@ -121,6 +121,7 @@ def molecular():
                 assert archived[key] == ('' if value is None else value)
     for reaction in source['reactions']:
         for spec in reaction['species']:
+            assert set(spec['methods']) == set(EXTERNAL)
             assert spec['maximum_centered_coordinate_difference_angstrom'] < source['coordinate_match_tolerance_angstrom']
             for method in spec['methods'].values():
                 if method['converged']:

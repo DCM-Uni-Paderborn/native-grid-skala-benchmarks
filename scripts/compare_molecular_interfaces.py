@@ -17,9 +17,9 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'benchmarks/dietGMTKN55/production-p25/paper-common-70'
 NATIVE = ['gapwxc_gth', 'hybrid_ae_gth_direct', 'hybrid_ae_gth_one_center']
-EXTERNAL = ['gauxc_ae', 'pyscf_unit', 'pyscf_bragg', 'gauxc_gpw']
+EXTERNAL = ['gauxc_ae', 'pyscf_unit', 'gauxc_gpw']
 SHEETS = {'gauxc_ae': 'GAPW', 'gauxc_gpw': 'GPW',
-          'pyscf_unit': 'PySCF unit', 'pyscf_bragg': 'PySCF Bragg'}
+          'pyscf_unit': 'PySCF unit'}
 EH_KCAL_NATIVE = 627.5094740631
 EH_KCAL_SOURCE = 627.509473777537
 

@@ -84,14 +84,14 @@ def molecular_interface_tables():
     summary = json.loads(summary_path.read_text())
     labels = {'gapwxc_gth': 'Native GX', 'hybrid_ae_gth_direct': 'Native HD',
               'hybrid_ae_gth_one_center': 'Native HOC', 'gauxc_ae': 'GauXC AE/ECP',
-              'pyscf_unit': 'PySCF U', 'pyscf_bragg': 'PySCF B',
+              'pyscf_unit': 'PySCF',
               'gauxc_gpw': 'GauXC GPW-GTH'}
     metrics = summary['reference_errors']
     selected = [(labels[m], metrics[m]) for m in labels if m != 'gauxc_gpw']
     selected.extend([('Native GX', summary['native_65_reference_errors']['gapwxc_gth']),
                      (labels['gauxc_gpw'], metrics['gauxc_gpw'])])
     table('molecular-interface-summary.tex',
-          r'Reference errors on reaction-matched populations, in kcal mol$^{-1}$. The first six rows use the fixed native 70-reaction set. The last two use its 65-reaction intersection with converged GauXC GPW-GTH data. Each source retains its recorded dispersion contribution.',
+          r'Reference errors on reaction-matched populations, in kcal mol$^{-1}$. The first five rows use the fixed native 70-reaction set. The last two use its 65-reaction intersection with converged GauXC GPW-GTH data. Each source retains its recorded dispersion contribution.',
           'lrrrrr', ['Method', '$N$', 'MAE', 'Median absolute', 'RMS', 'Maximum absolute'],
           [[name, s['n']]+[f"{s[k]:.4f}" for k in ['mean_absolute','median_absolute','root_mean_square','maximum_absolute']] for name,s in selected],
           label='tab:interface-summary')
@@ -108,10 +108,10 @@ def molecular_interface_tables():
           r'Direct reaction-energy differences, in kcal mol$^{-1}$. The first three difference statistics use the recorded total energies. The last column removes each source\textquotesingle s own D3 contribution to isolate its influence on the comparison.',
           'lrrrrr', ['Method pair', '$N$', 'MAD', 'RMS', 'Maximum', 'Electronic MAD'], values,
           label='tab:interface-pairs')
-    methods = ['reference_kcal_mol','gauxc_gpw','gauxc_ae','pyscf_unit','pyscf_bragg']
+    methods = ['reference_kcal_mol','gauxc_gpw','gauxc_ae','pyscf_unit']
     table('molecular-interface-reactions.tex',
           r'Reaction-resolved collaborator energies on the native common set, in kcal mol$^{-1}$. Reaction identifiers and official references match Table~\ref{tab:molecular-reactions}. A dash denotes an unavailable converged GPW-GTH value, not a zero. Recorded dispersion contributions are included.',
-          'llrrrrr', ['Subset','Reaction','Ref.','GauXC GPW','GauXC AE','PySCF U','PySCF B'],
+          'llrrrr', ['Subset','Reaction','Ref.','GauXC GPW','GauXC AE','PySCF'],
           [[r['subset'].replace('_',r'\_'),r['reaction_id']]+[f"{float(r[m]):.5f}" if r[m] else '--' for m in methods] for r in data],
           label='tab:interface-reactions',long=True)
 
