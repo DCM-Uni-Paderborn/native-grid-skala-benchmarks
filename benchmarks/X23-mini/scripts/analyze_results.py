@@ -4,6 +4,7 @@ import json
 import math
 import hashlib
 from pathlib import Path
+from analyze_basis_controls import selected_pairs
 
 ROOT = Path(__file__).resolve().parents[1]
 REVISION = "37aedacbb33677307818301a47a09ae435712293"
@@ -111,16 +112,18 @@ def main():
     report = {"scope": base["scope"], "accepted_base_cases": len(accepted), "total_base_cases": len(cases),
               "missing_base_cases": sorted(set(cases) - set(accepted)), "complete_pairs": pairs,
               "representation_comparisons": contrasts,
+              "paper_pairs": selected_pairs(pairs),
               "numerical_controls": controls,
               "paired_numerical_controls": paired_controls,
               "reference_doi": base["reference_doi"], "reference_uncertainty": base["reference_uncertainty"],
               "conversion_hartree_to_kjmol": HARTREE_TO_KJMOL, "validation_file_sha256": evidence,
               "caveat": "SCF/provenance accepted. Listed numerical controls quantify only their stated changes for the tested systems and representations, not a universal error bound. Basis/BSSE and untested numerical effects remain unresolved."}
-    text = "# Provisional X23-mini lattice energies\n\n"
+    text = "# Selected PCCP X23-mini lattice energies\n\n"
     text += f"{len(accepted)}/{len(cases)} base cases accepted; {len(pairs)}/12 crystal/molecule pairs complete.\n\n"
     text += "| System | Method | E_latt (kJ/mol) | DMC (kJ/mol) | Signed deviation (kJ/mol) |\n| --- | --- | ---: | ---: | ---: |\n"
-    for p in pairs:
+    for p in report["paper_pairs"]:
         text += f"| {p['system']} | {p['method']} | {p['lattice_energy_kjmol']:.3f} | {p['dmc_kjmol']:.1f} +/- {p['dmc_statistical_uncertainty_kjmol']:.1f} | {p['signed_deviation_kjmol']:+.3f} |\n"
+    text += "\nUrea AE uses the validated QZVPP/200-974 crystal and molecule. The original TZVPP pair remains in complete_pairs in the JSON and in the basis-convergence evidence. Other selections are unchanged. Four additional Urea controls separate grid and basis sensitivity.\n"
     text += "\nNegative deviations indicate stronger binding. DMC error bars are statistical; total DMC accuracy is estimated at about 1-2 kJ/mol.\n\n"
     text += "These are preliminary single-point results with bounded representative numerical checks, not a comprehensive convergence study. "
     text += "The differences must not yet be attributed solely to the functional or density representation. "
@@ -128,7 +131,7 @@ def main():
     if contrasts:
         text += "## Matched representation differences\n\n"
         text += "| System | Method A | Method B | A minus B (kJ/mol) |\n| --- | --- | --- | ---: |\n"
-        for c in contrasts:
+        for c in representation_comparisons(report["paper_pairs"]):
             text += f"| {c['system']} | {c['method_a']} | {c['method_b']} | {c['delta_a_minus_b_kjmol']:+.3f} |\n"
         text += "\nOnly completed pairs for the same system enter these differences. "
         text += "GAPW_XC versus direct GAPW changes more than the one-center treatment; isolate that effect only with the two GAPW-GTH variants.\n\n"

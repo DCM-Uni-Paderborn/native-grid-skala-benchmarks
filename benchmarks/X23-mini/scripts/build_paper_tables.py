@@ -19,10 +19,13 @@ LABELS = {
 
 
 def render(data):
-    pairs = {(p["method"], p["system"]): p for p in data["complete_pairs"]}
+    pairs = {(p["method"], p["system"]): p for p in data.get("paper_pairs", data["complete_pairs"])}
     expected = {(method, system) for method in METHODS for system in SYSTEMS}
     if (data["accepted_base_cases"] != 24
-            or len(data["complete_pairs"]) != 12 or set(pairs) != expected):
+            or len(data["complete_pairs"]) != 12
+            or {(p["method"], p["system"]) for p in data["complete_pairs"]} != expected
+            or len(data.get("paper_pairs", data["complete_pairs"])) != 12
+            or set(pairs) != expected):
         raise ValueError("The manuscript table requires all 24 accepted base cases")
     main = [
         r"\begin{table*}[t]",

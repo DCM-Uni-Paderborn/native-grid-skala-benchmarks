@@ -39,6 +39,13 @@ The EOS analysis uses 352 unique energies and 36 independent curves, yielding
 40 method/material entries after explicitly identified AE reuse. No EOS is
 inferred from the three molecular-crystal single-point pairs.
 
+The 14 September 2026 revision reports the validated QZVPP/200-974 Urea AE
+crystal/molecule pair (-110.4275 kJ/mol). Four completed matched controls
+separate the small quadrature effect from the substantial AE basis effect.
+Original triple-zeta values remain documented in the ESI and data archive.
+CO2, NH3, the GTH results and all EOS data are unchanged. Ongoing basis checks
+are not part of this publication snapshot.
+
 ## Rebuilding
 
 From this directory, run:

@@ -149,7 +149,7 @@ def eos_observables():
 
 
 def copied_tables():
-    for source in [LC/'paper/periodic-tables-si.tex',X23/'paper/x23-tables-si.tex']:
+    for source in [LC/'paper/periodic-tables-si.tex',X23/'paper/x23-tables-si.tex',X23/'paper/x23-basis-si.tex']:
         sources.append(source)
         text = source.read_text().replace(r'\texttt{GAPW\_XC}', 'GAPW-XC')
         (HERE/source.name).write_text(text)
@@ -197,7 +197,7 @@ def figures():
     sources.append(crystal_path)
     crystal_data=json.loads(crystal_path.read_text())
     assert crystal_data['accepted_base_cases']==24 and len(crystal_data['complete_pairs'])==12
-    pairs={(r['method'],r['system']):r for r in crystal_data['complete_pairs']}
+    pairs={(r['method'],r['system']):r for r in crystal_data.get('paper_pairs',crystal_data['complete_pairs'])}
     methods=['gapwxc-gth','gapw-ae','gapw-gth-direct','gapw-gth-one-center']
     systems=['CO2','NH3','urea']
     reference=np.array([pairs[methods[0],s]['dmc_kjmol'] for s in systems])
@@ -209,7 +209,7 @@ def figures():
     ax.axhline(0,color='#777777',lw=.7)
     ax.set_xticks(range(3),[r'CO$_2$',r'NH$_3$','Urea'])
     ax.set_ylabel(r'$E_{\rm latt}-E_{\rm DMC}$ / kJ mol$^{-1}$')
-    ax.set_ylim(-18,3);ax.set_xlim(-.45,2.45)
+    ax.set_ylim(-9,2);ax.set_xlim(-.45,2.45)
     ax.legend(frameon=False,fontsize=7.5,loc='upper center',bbox_to_anchor=(.5,-.16),ncol=2)
     fig.tight_layout(pad=.4);fig.savefig(HERE/'crystal-lattice-errors.pdf');plt.close(fig)
     fig,ax=plt.subplots(figsize=(3.35,3.45));ax.set_xlim(0,10);ax.set_ylim(0,10);ax.axis('off')

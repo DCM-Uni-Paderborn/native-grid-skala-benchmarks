@@ -8,10 +8,13 @@ import math
 from pathlib import Path
 import re
 import statistics
+import sys
 
 from compare_molecular_interfaces import EXTERNAL, calculate
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'benchmarks/X23-mini/scripts'))
+from analyze_basis_controls import assessment, selected_pairs
 HA_KCAL = 627.5094740631
 HA_KJ = 2625.4996394799
 
@@ -183,7 +186,9 @@ def crystals():
         r=json.loads(paths[0].read_text()); parent=records[c['case_id']]
         close((r['energy_hartree']-parent['energy_hartree'])/parent['molecules']*HA_KJ,
               c['delta_control_minus_parent_kjmol_per_molecule'])
-    return {'base_executions':24,'pairs':12,'numerical_controls':7}
+    assert data['paper_pairs'] == selected_pairs(data['complete_pairs'])
+    assert read(root/'results/basis-convergence.json') == assessment()
+    return {'base_executions':24,'pairs':12,'numerical_controls':7,'urea_basis_grid_controls':4}
 
 
 def numerical_controls():
@@ -238,7 +243,7 @@ def main():
     for r in read('paper/pccp/execution-provenance.json'):
         for name,digest in r['files'].items():
             assert sha(Path(r['target'])/name)==digest, (r['target'],name)
-    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==835
+    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==839
     for name,digest in read('paper/pccp/overleaf-source-snapshot.json')['files'].items():
         assert sha(Path('paper/pccp')/name)==digest
     print(json.dumps(report,indent=2))

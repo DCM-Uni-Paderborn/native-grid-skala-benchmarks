@@ -1,6 +1,6 @@
 # PCCP Data Coverage
 
-The online main text and ESI were synchronized and checked on 11 September
+The online main text and ESI were synchronized and checked on 14 September
 2026. The following selection is fixed by those documents, not by the former
 production queues. Original selected inputs and outputs have not been edited.
 
@@ -11,6 +11,7 @@ production queues. Original selected inputs and outputs have not been edited.
 | Quoted 100-reaction GauXC/PySCF context | ESI context table and cited author-manuscript version | No additional native executions |
 | Main molecular-crystal table and figure; ESI total energies | X23-mini accepted base outputs and validation records | 24 |
 | ESI paired grid, cutoff, k-mesh, symmetry tolerance and CPU/GPU checks | X23-mini accepted controls with exact parents | 7 |
+| Main selected Urea AE energy; ESI matched basis/grid table | Four completed Urea AE crystal/molecule controls with exact inputs, outputs and runtime hashes | 4 |
 | ESI LC10 structural tables, literature comparisons, EOS plots, B-prime and compressibility | 352 selected outputs, exact inputs, EOS selection and offline fitting scripts | 352 |
 | ESI paired ACONF cutoff table | Nine cutoff values, two geometries, GPW and GAPW-XC | 36 |
 | ESI GPW water radial/angular table | Self-consistent water quadrature series | 16 |
@@ -18,7 +19,7 @@ production queues. Original selected inputs and outputs have not been edited.
 | ESI force/stress finite differences | Five representations, nine executions each | 45 |
 | ESI full/reduced k-point table | Seven tight-SCF pairs, including original inputs and outputs | 14 |
 
-Total: **835 selected executions**. Reference transcriptions, generated
+Total: **839 selected executions**. Reference transcriptions, generated
 tables/figures, source TeX, analysis software and hash/provenance records are
 supporting dependencies, not additional benchmark campaigns.
 
@@ -29,7 +30,10 @@ the reaction-matched totals, reference errors and D3 sensitivity from the
 selected collaborator species values. Their raw source is referenced at an
 immutable repository revision rather than duplicated here. The three new
 interface tables are generated directly from these checked values. The
-existing native production, EOS and numerical-control datasets are unchanged.
+original native production, EOS and numerical-control records are unchanged.
+The selected Urea AE pair uses QZVPP at 200/974 quadrature. Its original
+triple-zeta pair remains part of the reported basis comparison. The other
+crystal/method pairs are unchanged, and pending controls are excluded.
 
 Excluded material was preserved outside this repository before pruning.
 Removal from the current tree does not erase old Git history. No history

@@ -23,6 +23,7 @@ python3 -B benchmarks/Goldzak12/scripts/analyze_selected_eos.py
 python3 -B benchmarks/Goldzak12/scripts/compare_selected_literature.py
 python3 -B benchmarks/Goldzak12/scripts/build_paper_tables.py
 python3 -B benchmarks/X23-mini/scripts/analyze_results.py
+python3 -B benchmarks/X23-mini/scripts/analyze_basis_controls.py
 python3 -B benchmarks/X23-mini/scripts/build_paper_tables.py
 python3 -B paper/pccp/analyse_derivative_checks.py --report convergence/derivatives/periodic-water-20260909/validated-results.json --out convergence/derivatives/periodic-water-20260909 --tex paper/pccp/derivative-results.tex
 python3 -B paper/pccp/build_submission_assets.py
@@ -46,6 +47,11 @@ The archived tables and figures are the manuscript snapshot.
   frozen/actual input, timing and execution evidence. Controls name their
   exact parent. The 1200 Ry check is crystal-only, not a paired lattice-energy
   convergence test.
+  `results/lattice-energies.json` retains the original `complete_pairs` and
+  records the manuscript selection separately as `paper_pairs`. Only Urea AE
+  is replaced by the validated QZVPP crystal/molecule pair. The four additional
+  inputs and outputs in `results/basis-controls/urea` reproduce the matched
+  quadrature/basis test in `results/basis-convergence.json`.
 * Derivative and symmetry checks retain their exact inputs and outputs.
   Their component-specific scope is defined in the ESI.
 
