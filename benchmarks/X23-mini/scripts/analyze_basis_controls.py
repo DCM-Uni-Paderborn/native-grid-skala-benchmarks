@@ -6,6 +6,10 @@ import json
 import math
 from pathlib import Path
 import re
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from basis_sensitivity import assess as additional_controls
 
 ROOT = Path(__file__).resolve().parents[1]
 HA_KJ = 2625.4996394799
@@ -103,20 +107,38 @@ def selected_pairs(base_pairs):
                         selection_reason="Larger AE basis following the paired grid/basis sensitivity test",
                         execution_sha256={p:r["execution_sha256"] for p,r in selected["phases"].items()},
                         selected_source_directories={p:r["source_directory"] for p,r in selected["phases"].items()})
+    for system, controls in additional_controls()["crystals"].items():
+        selected = controls["qzvpp"]
+        pair = next(p for p in pairs if (p["method"], p["system"]) == ("gapw-ae", system))
+        pair["superseded_base_lattice_energy_kjmol"] = pair["lattice_energy_kjmol"]
+        pair.update(solid_energy_hartree=selected["phases"]["solid"]["energy_hartree"],
+                    molecule_energy_hartree=selected["phases"]["molecule"]["energy_hartree"],
+                    lattice_energy_kjmol=selected["lattice_energy_kjmol"],
+                    signed_deviation_kjmol=selected["lattice_energy_kjmol"]-pair["dmc_kjmol"],
+                    basis="QZVPP-MOLOPT-PBE-ae", radial_lebedev=[200,974],
+                    selection_reason="Uniform larger AE basis following paired grid/basis controls",
+                    execution_sha256={p:r["execution_sha256"] for p,r in selected["phases"].items()},
+                    selected_source_directories={p:str(Path(r["source_directory"]).relative_to("benchmarks/X23-mini")) for p,r in selected["phases"].items()})
     return pairs
 
 def table(report):
     lines = [
         r"\begin{table}[htbp]", r"\centering", r"\small",
-        r"\caption{Paired Urea AE basis and quadrature checks. Total energies are in hartree and lattice energies in kJ~mol$^{-1}$. Both phases use the same basis and grid. All four new executions satisfy the OT threshold $5\times10^{-7}$ and end normally. The QZVPP pair supplies the Urea AE entry in Table~\ref{tab:x23_total_si}.}",
+        r"\caption{Paired AE basis and quadrature checks. Total energies are in hartree and lattice energies in kJ~mol$^{-1}$. Both phases use the same basis and grid. All twelve fine-grid executions satisfy the OT threshold $5\times10^{-7}$ and end normally. The QZVPP pairs supply all three AE entries in Table~\ref{tab:x23_total_si}.}",
         r"\label{tab:urea-basis}",
-        r"\begin{tabular}{llrrr}", r"\toprule",
-        r"Basis & Radial/Lebedev & $E_{\rm solid}$ & $E_{\rm molecule}$ & $E_{\rm latt}$\\", r"\midrule",
+        r"\begin{tabular}{lllrrr}", r"\toprule",
+        r"System & Basis & Radial/Lebedev & $E_{\rm solid}$ & $E_{\rm molecule}$ & $E_{\rm latt}$\\", r"\midrule",
     ]
-    lines.append(r"TZVPP & 150/770 & -450.589911695840 & -225.247483909549 & -124.637557\\")
+    for system, controls in additional_controls()["crystals"].items():
+        label = {"CO2": r"CO$_2$", "NH3": r"NH$_3$"}[system]
+        for level in ("tzvpp", "qzvpp"):
+            pair = controls[level]
+            a,b = pair["phases"]["solid"],pair["phases"]["molecule"]
+            lines.append(f"{label} & {level.upper()} & 200/974 & {a['energy_hartree']:.12f} & {b['energy_hartree']:.12f} & {pair['lattice_energy_kjmol']:.6f}" + r"\\")
+    lines.append(r"Urea & TZVPP & 150/770 & -450.589911695840 & -225.247483909549 & -124.637557\\")
     for level,pair in report["pairs"].items():
         a,b = pair["phases"]["solid"],pair["phases"]["molecule"]
-        lines.append(f"{level.split('-')[0].upper()} & 200/974 & {a['energy_hartree']:.12f} & {b['energy_hartree']:.12f} & {pair['lattice_energy_kjmol']:.6f}" + r"\\")
+        lines.append(f"Urea & {level.split('-')[0].upper()} & 200/974 & {a['energy_hartree']:.12f} & {b['energy_hartree']:.12f} & {pair['lattice_energy_kjmol']:.6f}" + r"\\")
     lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
     return "\n".join(lines)
 
@@ -128,4 +150,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

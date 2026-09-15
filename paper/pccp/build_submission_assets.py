@@ -190,7 +190,7 @@ def eos_figure():
     plt.close(fig)
 
 
-def figures():
+def crystal_figure():
     plt.rcParams.update({'font.family':'sans-serif','font.size':9,'pdf.fonttype':42,'axes.spines.top':False,'axes.spines.right':False})
     fig,ax=plt.subplots(figsize=(3.35,2.7))
     crystal_path=X23/'results/lattice-energies.json'
@@ -212,6 +212,9 @@ def figures():
     ax.set_ylim(-9,2);ax.set_xlim(-.45,2.45)
     ax.legend(frameon=False,fontsize=7.5,loc='upper center',bbox_to_anchor=(.5,-.16),ncol=2)
     fig.tight_layout(pad=.4);fig.savefig(HERE/'crystal-lattice-errors.pdf');plt.close(fig)
+
+def figures():
+    crystal_figure()
     fig,ax=plt.subplots(figsize=(3.35,3.45));ax.set_xlim(0,10);ax.set_ylim(0,10);ax.axis('off')
     def box(x,y,text,width=2.8,color='#E7F2F2'):
         ax.text(x,y,text,ha='center',va='center',fontsize=8.5,bbox={'boxstyle':'square,pad=.5','fc':color,'ec':'#657575','lw':.7})

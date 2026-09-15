@@ -12,16 +12,17 @@ class BasisTests(unittest.TestCase):
         self.assertAlmostEqual(r["paired_grid_change_kjmol"],-.2053177775,places=8)
         self.assertAlmostEqual(r["pairs"]["qzvpp-grid200-974"]["lattice_energy_kjmol"],-110.4274668659,places=8)
 
-    def test_only_urea_ae_is_replaced(self):
+    def test_only_three_ae_pairs_are_replaced(self):
         base=json.loads((basis.ROOT/"results/lattice-energies.json").read_text())["complete_pairs"]
         before=copy.deepcopy(base)
         selected=basis.selected_pairs(base)
         self.assertEqual(base,before)
         self.assertEqual(len(selected),12)
         for old,new in zip(base,selected):
-            if (old["method"],old["system"])==("gapw-ae","urea"):
+            if old["method"]=="gapw-ae":
                 self.assertNotEqual(old["execution_sha256"],new["execution_sha256"])
                 self.assertEqual(new["superseded_base_lattice_energy_kjmol"],old["lattice_energy_kjmol"])
+                self.assertEqual(new["basis"],"QZVPP-MOLOPT-PBE-ae")
             else:
                 self.assertEqual(old,new)
 
@@ -35,4 +36,3 @@ class BasisTests(unittest.TestCase):
 
 if __name__=="__main__":
     unittest.main()
-

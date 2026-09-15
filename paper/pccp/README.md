@@ -39,12 +39,15 @@ The EOS analysis uses 352 unique energies and 36 independent curves, yielding
 40 method/material entries after explicitly identified AE reuse. No EOS is
 inferred from the three molecular-crystal single-point pairs.
 
-The 14 September 2026 revision reports the validated QZVPP/200-974 Urea AE
-crystal/molecule pair (-110.4275 kJ/mol). Four completed matched controls
-separate the small quadrature effect from the substantial AE basis effect.
-Original triple-zeta values remain documented in the ESI and data archive.
-CO2, NH3, the GTH results and all EOS data are unchanged. Ongoing basis checks
-are not part of this publication snapshot.
+The 15 September 2026 revision uses QZVPP/200-974 for all three selected AE
+crystal/molecule pairs. The CO2, NH3 and urea lattice energies are -32.066940,
+-38.184551 and -110.427467 kJ/mol. Twelve matched controls document their
+basis sensitivity. Original triple-zeta values remain archived, and the
+GTH results and EOS data are unchanged. The SI additionally reports five
+completed targeted molecular basis pairs, including the unresolved QZ ethane
+outlier, and a preliminary same-six-phase ice comparison. Neither subset
+replaces the fixed 70-reaction statistics or constitutes a complete QZ
+benchmark. Unreported active runs and operational diagnostics are excluded.
 
 ## Rebuilding
 

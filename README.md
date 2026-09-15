@@ -6,12 +6,14 @@ in CP2K: Unified one-centre reconstruction for molecular and condensed-phase
 calculations** and its electronic supplementary information (ESI). The TeX sources in
 [paper/pccp](paper/pccp) were checked against the
 [online PCCP project](https://www.overleaf.com/project/6aa123c081b754e6cf561ee5)
-on 14 September 2026.
+on 15 September 2026.
 
 | Paper / ESI content | Supporting data |
 | --- | --- |
 | 70 common dietGMTKN55 reactions; separate 65-reaction GauXC GPW-GTH and 70-reaction GauXC AE/ECP--PySCF comparisons | [Molecular data](benchmarks/dietGMTKN55/production-p25/paper-common-70), 332 unique native species-route executions and a pinned collaborator-data extract |
-| CO2, NH3 and urea, four representations | [Molecular crystals](benchmarks/X23-mini), 24 original base executions, seven numerical controls and four paired Urea AE basis/grid controls |
+| CO2, NH3 and urea, four representations | [Molecular crystals](benchmarks/X23-mini), 24 original base executions, seven numerical controls and twelve paired AE basis/grid controls, with all three selected AE pairs at QZVPP |
+| Five completed targeted molecular basis comparisons, including the unresolved ethane QZ outlier | [Paired molecular controls](benchmarks/dietGMTKN55/basis-controls), 24 executions, separate from the unchanged 70-reaction statistics |
+| Preliminary same-six-phase ice basis comparison and two symmetry checks | [Ice controls](benchmarks/DMC-ICE13), 16 executions including both molecular references, not a completed QZVPP ICE13 benchmark |
 | Ten-solid structural comparison, in the ESI | [LC10](benchmarks/Goldzak12), 352 unique energies, 36 independent EOS, 40 method-solid comparisons |
 | ACONF cutoff and water radial/angular quadrature | [Cutoff](convergence/cutoff/aconf8-b200) and [quadrature](convergence/atom-grid) |
 | Isolated-cell 22/24/25 angstrom padding | [Padding](diagnostics/molecular-padding-convergence) |

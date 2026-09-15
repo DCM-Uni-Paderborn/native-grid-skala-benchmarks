@@ -11,6 +11,7 @@ import statistics
 import sys
 
 from compare_molecular_interfaces import EXTERNAL, calculate
+from basis_sensitivity import assess as basis_assessment
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'benchmarks/X23-mini/scripts'))
@@ -188,7 +189,7 @@ def crystals():
               c['delta_control_minus_parent_kjmol_per_molecule'])
     assert data['paper_pairs'] == selected_pairs(data['complete_pairs'])
     assert read(root/'results/basis-convergence.json') == assessment()
-    return {'base_executions':24,'pairs':12,'numerical_controls':7,'urea_basis_grid_controls':4}
+    return {'base_executions':24,'pairs':12,'numerical_controls':7,'crystal_basis_grid_controls':12}
 
 
 def numerical_controls():
@@ -243,7 +244,9 @@ def main():
     for r in read('paper/pccp/execution-provenance.json'):
         for name,digest in r['files'].items():
             assert sha(Path(r['target'])/name)==digest, (r['target'],name)
-    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==839
+    report['paired_basis_controls'] = basis_assessment()
+    assert report['paired_basis_controls'] == read('convergence/basis-sensitivity-20260915/assessment.json')
+    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==887
     for name,digest in read('paper/pccp/overleaf-source-snapshot.json')['files'].items():
         assert sha(Path('paper/pccp')/name)==digest
     print(json.dumps(report,indent=2))

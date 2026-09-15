@@ -16,6 +16,9 @@
 \renewcommand{\theequation}{S\arabic{equation}}
 \renewcommand{\thepage}{S\arabic{page}}
 \setlength{\emergencystretch}{2em}
+\makeatletter
+\patchcmd{\l@section}{1.5em}{2.2em}{}{}
+\makeatother
 \title{Electronic Supplementary Information\\[6pt]\large Native implementation of the machine-learned Skala exchange--correlation functional in CP2K: Unified one-centre reconstruction for molecular and condensed-phase calculations}
 \author{Johann Pototschnig, Franz P\"oschel,\\J\"urg Hutter, and Thomas D. K\"uhne}
 \date{}
@@ -93,7 +96,9 @@ The 70-reaction comparison uses the University of Zurich (UZH) 2026.2 AE TZVPP-M
 
 The molecule-centred cells add 25~\AA{} to each molecular Cartesian extent. Cell and Poisson periodicity are disabled and the analytic isolated-system Poisson solver is used. The production atom-composite quadrature has 100 radial points and the 434-point Lebedev rule. Plane-wave/relative cutoffs are 400/60~Ry for GAPW-XC/GTH and 640/60~Ry for the shared AE route. The executed inputs document the corresponding GTH one-centre settings. OT and diagonalization thresholds are $5\times10^{-7}$ and $5\times10^{-6}$, respectively. The threshold controls the solver residual, not an energy error in kcal~mol$^{-1}$.
 
-Basis/core changes must be kept distinct from quadrature refinement. The reported AE/GTH differences are not a basis-only convergence series, and no complete-basis limit is inferred from them.
+Basis/core changes must be kept distinct from quadrature refinement. The reported AE/GTH differences are not a basis-only convergence series, and no complete-basis limit is inferred from them. In the paired controls below, TZVPP and QZVPP denote the UZH triple- and quadruple-zeta valence plus double-polarization AE bases, respectively.
+
+\input{molecular-basis-controls-si}
 
 \subsection{Regular-grid cutoff}
 \label{sec:cutoff}
@@ -122,7 +127,7 @@ Selected matched isolated-system calculations tested added extents of 22, 24, an
 
 The common set contains 70 reactions from 36 parent subsets of dietGMTKN55.\cite{Gould2018,Goerigk2017} Each reaction has complete accepted species energies in every compared protocol. The remaining cases required longer SCF convergence. The final common set is fixed across methods. No additional reaction is removed on the basis of its reference error. The reaction index and source records in the repository define the selection explicitly.
 
-The same D3 contribution is used in the native reaction comparison. Signed errors are calculation minus the official reference, and mean absolute errors (MAEs) are unweighted averages over the fixed common set. They are not full-100 dietGMTKN55 statistics or type-2 weighted total mean absolute deviations (WTMAD-2). The ozone-containing W4-11/138 reaction remains included, despite its large GTH error. It contributes 58.8\% of the all-GTH squared error. Removing it would lower the 69-reaction GAPW-XC MAE to 2.563~kcal~mol$^{-1}$. This is an influence diagnostic, not the headline result. The direct/one-centre mixed comparison shares all light-element AE energies, and only one retained reaction changes by more than $10^{-9}$~kcal~mol$^{-1}$.
+The same D3 contribution is used in the native reaction comparison. Signed errors are calculation minus the official reference, and MAEs are unweighted averages over the fixed common set. They are not full-100 dietGMTKN55 statistics or type-2 weighted total mean absolute deviations (WTMAD-2). The ozone-containing W4-11/138 reaction remains included, despite its large GTH error. It contributes 58.8\% of the all-GTH squared error. Removing it would lower the 69-reaction GAPW-XC MAE to 2.563~kcal~mol$^{-1}$. This is an influence diagnostic, not the headline result. The direct/one-centre mixed comparison shares all light-element AE energies, and only one retained reaction changes by more than $10^{-9}$~kcal~mol$^{-1}$.
 
 \input{molecular-reactions}
 
@@ -201,6 +206,8 @@ The C inputs of both mixed protocols use an AE carbon basis and potential, so th
 
 \input{x23-analysis-si}
 \FloatBarrier
+\input{ice-basis-si}
+\FloatBarrier
 \input{periodic-analysis-si}
 \FloatBarrier
 
@@ -224,7 +231,7 @@ The matched primary literature tables provide $a_0$ and $B_0$ but no consistentl
 \section{Reproducibility and Numerical Limits}
 \label{sec:reproducibility}
 
-The molecular, molecular-crystal, and solid subsets use distinct documented protocols and are analysed separately. Each reported energy is linked to its executed input, model and executable versions, SCF convergence, and normal termination record. Replicate calculations count once. The archive distinguishes production energies from the independent numerical controls and preserves the input and source hashes needed to reproduce the reported quantities.
+The molecular, molecular-crystal, ice, and solid subsets use distinct documented protocols and are analysed separately. Each reported energy is linked to its executed input, model and executable versions, SCF convergence, and normal termination record. Replicate calculations count once. The archive distinguishes production energies from the independent numerical controls and preserves the input and source hashes needed to reproduce the reported quantities. The molecular QZVPP ethane outlier remains explicitly identified as unresolved despite normal SCF termination. The preliminary ice subset is not presented as a completed DMC-ICE13 benchmark.
 
 The ESI reports available convergence and sensitivity data rather than claiming a universal bound on basis, integration, or k-point error. In particular, the present work does not provide complete-basis extrapolation, BSSE correction for the molecular crystals, converged phonons, finite-temperature thermodynamics, or cohesive energies for the ten solids. Such quantities would require additional calculations and reference choices. The reported lattice-energy and structural trends remain useful, provided those distinctions are maintained.
 
