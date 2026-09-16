@@ -53,6 +53,10 @@ The archived tables and figures are the manuscript snapshot.
   entries use validated QZVPP crystal/molecule pairs. Twelve additional
   inputs and outputs in `results/basis-controls` reproduce the matched tests.
   `results/basis-convergence.json` retains the Urea quadrature/basis analysis.
+  `scripts/analyze_basis_controls.py` also derives the matched three-crystal
+  TZVPP/QZVPP error table from the accepted fine-grid pairs and deposited DMC
+  references. It reproduces the MAE change from 7.954 to 1.537 kJ/mol without
+  new electronic-structure calculations or a change in crystal selection.
 * The additional CO2/NH3, molecular-reaction, and ice controls are indexed in
   `convergence/basis-sensitivity-20260915/index.json`. The independent
   `scripts/basis_sensitivity.py` verifies completed-block markers, energy,

@@ -34,5 +34,17 @@ class BasisTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 basis.assessment()
 
+    def test_matched_three_crystal_errors(self):
+        report = basis.assessment()
+        errors = basis.matched_basis_errors(report)
+        self.assertEqual([r["system"] for r in errors["rows"]], ["CO2", "NH3", "urea"])
+        self.assertAlmostEqual(errors["tz_mae"], 7.9542281354, places=8)
+        self.assertAlmostEqual(errors["qz_mae"], 1.5366186233, places=8)
+        for row in errors["rows"]:
+            self.assertAlmostEqual(row["qz_error"] - row["tz_error"], row["basis_shift"])
+        table = basis.table(report)
+        self.assertIn(r"\label{tab:crystal-basis-errors}", table)
+        self.assertIn("MAE & 7.954 & 1.537", table)
+
 if __name__=="__main__":
     unittest.main()

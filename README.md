@@ -6,7 +6,7 @@ in CP2K: Unified one-centre reconstruction for molecular and condensed-phase
 calculations** and its electronic supplementary information (ESI). The TeX sources in
 [paper/pccp](paper/pccp) were checked against the
 [online PCCP project](https://www.overleaf.com/project/6aa123c081b754e6cf561ee5)
-on 15 September 2026.
+on 16 September 2026.
 
 | Paper / ESI content | Supporting data |
 | --- | --- |

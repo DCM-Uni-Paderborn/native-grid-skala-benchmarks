@@ -6,6 +6,7 @@ import json
 import math
 from pathlib import Path
 import re
+import statistics
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
@@ -121,6 +122,26 @@ def selected_pairs(base_pairs):
                     selected_source_directories={p:str(Path(r["source_directory"]).relative_to("benchmarks/X23-mini")) for p,r in selected["phases"].items()})
     return pairs
 
+def matched_basis_errors(report):
+    references = json.loads((ROOT / "manifest.json").read_text())["references"]
+    crystals = additional_controls()["crystals"]
+    crystals["urea"] = {
+        level: report["pairs"][level + "-grid200-974"]
+        for level in ("tzvpp", "qzvpp")
+    }
+    rows = []
+    for system in ("CO2", "NH3", "urea"):
+        pair = crystals[system]
+        reference = references[system][0]
+        tz = pair["tzvpp"]["lattice_energy_kjmol"]
+        qz = pair["qzvpp"]["lattice_energy_kjmol"]
+        rows.append({"system": system, "tz_error": tz - reference,
+                     "qz_error": qz - reference, "basis_shift": qz - tz})
+    return {"rows": rows,
+            "tz_mae": statistics.mean(abs(r["tz_error"]) for r in rows),
+            "qz_mae": statistics.mean(abs(r["qz_error"]) for r in rows)}
+
+
 def table(report):
     lines = [
         r"\begin{table}[htbp]", r"\centering", r"\small",
@@ -140,6 +161,16 @@ def table(report):
         a,b = pair["phases"]["solid"],pair["phases"]["molecule"]
         lines.append(f"Urea & {level.split('-')[0].upper()} & 200/974 & {a['energy_hartree']:.12f} & {b['energy_hartree']:.12f} & {pair['lattice_energy_kjmol']:.6f}" + r"\\")
     lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
+    errors = matched_basis_errors(report)
+    lines += [r"\begin{table}[htbp]", r"\centering\small",
+              r"\caption{Signed lattice-energy errors and basis shifts for the matched 200/974 AE pairs in Table~\ref{tab:urea-basis}, in kJ~mol$^{-1}$. DMC references are from Ref.~\citenum{DellaPia2024X23}. Negative reference errors indicate stronger binding. The MAEs use the same three crystals and unrounded energies at both basis levels.}",
+              r"\label{tab:crystal-basis-errors}", r"\begin{tabular}{lrrr}", r"\toprule",
+              r"Crystal & TZVPP--DMC & QZVPP--DMC & QZVPP--TZVPP\\", r"\midrule"]
+    for row in errors["rows"]:
+        label = {"CO2": r"CO$_2$", "NH3": r"NH$_3$", "urea": "Urea"}[row["system"]]
+        lines.append(f"{label} & {row['tz_error']:+.3f} & {row['qz_error']:+.3f} & {row['basis_shift']:+.3f}" + r"\\")
+    lines += [r"\midrule", f"MAE & {errors['tz_mae']:.3f} & {errors['qz_mae']:.3f} & --" + r"\\",
+              r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
     return "\n".join(lines)
 
 def main():
