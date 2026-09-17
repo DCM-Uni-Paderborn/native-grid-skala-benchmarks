@@ -49,8 +49,11 @@ QZ ethane solution and its lower-state restart, and a matched twelve-phase ice
 comparison including relative energies to Ih. Five-volume Si, diamond and MgO
 QZ controls document material-dependent structural basis effects. These
 controls do not replace the fixed 70-reaction or ten-solid statistics and do
-not establish complete-basis limits. Unreported active runs and operational
-diagnostics are excluded.
+not establish complete-basis limits. Two further molecular QZ reaction controls,
+CARBHB12/11 and G21EA/25, are reported separately in the SI. Their five final
+species and the two required SCF initialization records are preserved in
+`convergence/molecular-qz-completion-20260917`. The latter are not benchmark
+energies. Unreported active runs and unrelated operational diagnostics are excluded.
 
 ## Rebuilding
 
@@ -58,6 +61,7 @@ From this directory, run:
 
 ```bash
 python3 -B ../../scripts/compare_molecular_interfaces.py --write
+python3 -B ../../scripts/molecular_completion_controls.py --write
 python3 build_submission_assets.py
 python3 analyse_derivative_checks.py \
   --report ../../convergence/derivatives/periodic-water-20260909/validated-results.json \

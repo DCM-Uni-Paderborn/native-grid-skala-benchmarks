@@ -12,6 +12,7 @@ import sys
 
 from compare_molecular_interfaces import EXTERNAL, calculate
 from basis_sensitivity import assess as basis_assessment, tables as basis_tables
+from molecular_completion_controls import assess as completion_assessment, table as completion_table
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'benchmarks/X23-mini/scripts'))
@@ -248,7 +249,10 @@ def main():
     assert report['paired_basis_controls'] == read('convergence/basis-sensitivity-20260915/assessment.json')
     for name,content in basis_tables(report['paired_basis_controls']).items():
         assert (ROOT/'paper/pccp'/name).read_text().strip()==content.strip(), name
-    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==926
+    report['additional_molecular_basis_controls'] = completion_assessment()
+    assert report['additional_molecular_basis_controls'] == read('convergence/molecular-qz-completion-20260917/assessment.json')
+    assert (ROOT/'paper/pccp/molecular-additional-basis-table-si.tex').read_text() == completion_table(report['additional_molecular_basis_controls'])
+    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==933
     snapshot=read('paper/pccp/overleaf-source-snapshot.json')
     for name,digest in {**snapshot['files'],**snapshot['pdf_sha256']}.items():
         assert sha(Path('paper/pccp')/name)==digest
