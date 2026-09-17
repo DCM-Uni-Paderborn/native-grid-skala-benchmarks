@@ -11,7 +11,7 @@ import statistics
 import sys
 
 from compare_molecular_interfaces import EXTERNAL, calculate
-from basis_sensitivity import assess as basis_assessment
+from basis_sensitivity import assess as basis_assessment, tables as basis_tables
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'benchmarks/X23-mini/scripts'))
@@ -246,9 +246,14 @@ def main():
             assert sha(Path(r['target'])/name)==digest, (r['target'],name)
     report['paired_basis_controls'] = basis_assessment()
     assert report['paired_basis_controls'] == read('convergence/basis-sensitivity-20260915/assessment.json')
-    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==887
-    for name,digest in read('paper/pccp/overleaf-source-snapshot.json')['files'].items():
+    for name,content in basis_tables(report['paired_basis_controls']).items():
+        assert (ROOT/'paper/pccp'/name).read_text().strip()==content.strip(), name
+    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==926
+    snapshot=read('paper/pccp/overleaf-source-snapshot.json')
+    for name,digest in {**snapshot['files'],**snapshot['pdf_sha256']}.items():
         assert sha(Path('paper/pccp')/name)==digest
+    for name,digest in read('paper/pccp/source-data-sha256.json').items():
+        assert sha(Path(name))==digest, name
     print(json.dumps(report,indent=2))
 
 

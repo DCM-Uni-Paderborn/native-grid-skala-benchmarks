@@ -1,14 +1,15 @@
 # Reproducing the PCCP Analysis
 
 All commands below analyze existing data; none launches a new SCF calculation.
-The audit uses Python's standard library. Fitting and figures additionally
-require NumPy and Matplotlib. LaTeX needs the packages listed in the source
+The audit and EOS fitting require Python and NumPy. Figures additionally
+require Matplotlib. LaTeX needs the packages listed in the source
 files and TeX Live's RSC bibliography style.
 
 From the repository root:
 
 ```sh
 python3 -B scripts/audit_pccp_package.py
+python3 -B -m unittest discover -s scripts -p 'test_*.py'
 python3 -B benchmarks/Goldzak12/scripts/verify_selected_package.py
 python3 -B -m unittest discover -s benchmarks/Goldzak12/scripts -p 'test_*.py'
 python3 -B -m unittest discover -s benchmarks/X23-mini/scripts -p 'test_*.py'
@@ -57,14 +58,18 @@ The archived tables and figures are the manuscript snapshot.
   TZVPP/QZVPP error table from the accepted fine-grid pairs and deposited DMC
   references. It reproduces the MAE change from 7.954 to 1.537 kJ/mol without
   new electronic-structure calculations or a change in crystal selection.
-* The additional CO2/NH3, molecular-reaction, and ice controls are indexed in
+* The additional CO2/NH3, molecular-reaction, ice and solid controls are indexed in
   `convergence/basis-sensitivity-20260915/index.json`. The independent
   `scripts/basis_sensitivity.py` verifies completed-block markers, energy,
   electron count, input/runtime hashes, and paired reaction stoichiometry.
-  It reproduces the new SI tables and `assessment.json`. The QZ ethane
-  outlier remains explicitly unresolved and never enters the 70-reaction
-  production statistics. The ice average uses the same six phases at both
-  basis levels and retains the documented molecular-reference caveat.
+  It reproduces the new SI tables and `assessment.json`. The initial QZ
+  ethane outlier is retained alongside the lower-energy restart and finer-grid
+  atomic-start controls. None replaces entries in the 70-reaction statistics.
+  The ice average uses the same twelve phases at both basis levels and retains
+  the documented molecular-reference caveat. Relative-to-Ih energies cancel
+  that reference. Five-volume QZ curves for Si, diamond and MgO are matched to
+  the same original TZ volumes, preserving each point's k-mesh. Three TZ
+  runtime controls distinguish basis effects from a changed implementation.
 * Derivative and symmetry checks retain their exact inputs and outputs.
   Their component-specific scope is defined in the ESI.
 
