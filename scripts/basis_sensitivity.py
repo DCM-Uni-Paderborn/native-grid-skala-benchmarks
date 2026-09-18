@@ -66,7 +66,7 @@ def invariant(inp):
 
 def assess():
     index = json.loads((DATA / "index.json").read_text())
-    assert len(index["cases"]) == 87
+    assert len(index["cases"]) == 89
     runs = {}
     for case in index["cases"]:
         key = (case["kind"], case["system"], case["level"], case["phase"])
@@ -122,8 +122,28 @@ def assess():
                               for r in result["ice"]]
     result["ice_relative_mae"] = {level: statistics.mean(abs(r[level] - r["dmc_kjmol"])
         for r in result["ice_relative"] if r["phase"] != "Ih") for level in ("tzvpp", "qzvpp")}
+    result["ice_error_statistics"] = {
+        "absolute": ice_error_statistics(result["ice"]),
+        "relative_ih": ice_error_statistics([r for r in result["ice_relative"] if r["phase"] != "Ih"]),
+    }
     result["ice_reference"] = index["ice_reference"]
     result["solid_basis_controls"] = solid_assessment(runs)
+    return result
+
+
+def ice_error_statistics(rows):
+    result = {}
+    for level in ("tzvpp", "qzvpp"):
+        errors = [r[level] - r["dmc_kjmol"] for r in rows]
+        worst = max(range(len(rows)), key=lambda i: abs(errors[i]))
+        result[level] = {
+            "count": len(rows), "mae_kjmol": statistics.mean(map(abs, errors)),
+            "mse_kjmol": statistics.mean(errors),
+            "rmse_kjmol": math.sqrt(statistics.mean(e * e for e in errors)),
+            "maximum_absolute_error_kjmol": abs(errors[worst]),
+            "maximum_error_phase": rows[worst]["phase"],
+            "negative_error_count": sum(e < 0 for e in errors),
+        }
     return result
 
 
@@ -189,15 +209,18 @@ def tables(report):
         lines.append(f"{label} & {r['reference_kcal_mol']:.3f} & {r['tz_kcal_mol']:.3f} & {r['qz_kcal_mol']:.3f}{star} & {r['gauxc_ae_kcal_mol']:.3f} & {r['pyscf_kcal_mol']:.3f}" + r"\\")
     lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
     ice = [r"\begin{table}[htbp]", r"\centering\small",
-           r"\caption{Matched twelve-phase ice basis comparison. Electronic lattice energies and signed QZVPP--DMC residuals are in kJ~mol$^{-1}$ per water molecule. Parentheses give DMC statistical uncertainties. Both MAEs use the same twelve phases, excluding XIII.}",
-           r"\label{tab:ice-basis}", r"\begin{tabular}{lrrrr}", r"\toprule",
-           r"Phase & TZVPP & QZVPP & DMC & QZVPP--DMC\\", r"\midrule"]
+           r"\caption{Complete matched DMC-ICE13 comparison. Electronic lattice energies and signed residuals are in kJ~mol$^{-1}$ per water molecule; $\delta=E_{\mathrm{latt}}-E_{\mathrm{DMC}}$. Parentheses give DMC statistical uncertainties. MAE, mean signed error (MSE), and root-mean-square error (RMSE) use all thirteen phases at each basis level.}",
+           r"\label{tab:ice-basis}", r"\begin{tabular}{lrrrrr}", r"\toprule",
+           r"Phase & TZVPP & QZVPP & DMC & $\delta_{\rm TZ}$ & $\delta_{\rm QZ}$\\", r"\midrule"]
     for r in report["ice"]:
-        ice.append(f"{r['phase']} & {r['tzvpp']:.3f} & {r['qzvpp']:.3f} & {r['dmc_kjmol']:.2f}({round(r['dmc_statistical_uncertainty_kjmol']*100):d}) & {r['qzvpp']-r['dmc_kjmol']:.3f}" + r"\\")
-    ice += [r"\midrule", f"MAE & {report['ice_mae']['tzvpp']:.3f} & {report['ice_mae']['qzvpp']:.3f} & -- & --" + r"\\",
-            r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
+        ice.append(f"{r['phase']} & {r['tzvpp']:.3f} & {r['qzvpp']:.3f} & {r['dmc_kjmol']:.2f}({round(r['dmc_statistical_uncertainty_kjmol']*100):d}) & {r['tzvpp']-r['dmc_kjmol']:.3f} & {r['qzvpp']-r['dmc_kjmol']:.3f}" + r"\\")
+    ice.append(r"\midrule")
+    for metric in ("mae", "mse", "rmse"):
+        stats = report["ice_error_statistics"]["absolute"]
+        ice.append(f"{metric.upper()} & -- & -- & -- & {stats['tzvpp'][metric+'_kjmol']:.3f} & {stats['qzvpp'][metric+'_kjmol']:.3f}" + r"\\")
+    ice += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
     relative = [r"\begin{table}[htbp]", r"\centering\small",
-        r"\caption{Relative electronic energies with respect to ice Ih, in kJ~mol$^{-1}$ per water molecule. The MAE excludes the identically zero Ih row. DMC differences are calculated from the rounded absolute energies in Table II of Ref.~\citenum{DellaPia2022Ice}, so the XI value is 0.16 rather than the separately rounded 0.15 in its Table I. The gas-phase reference cancels exactly.}",
+        r"\caption{Relative electronic energies with respect to ice Ih, in kJ~mol$^{-1}$ per water molecule. The MAE uses all twelve nontrivial differences, excluding the identically zero Ih row. DMC differences are calculated from the rounded absolute energies in Table I of Ref.~\citenum{DellaPia2022Ice}, so the XI value is 0.16 rather than its separately rounded 0.15. The gas-phase reference cancels exactly.}",
         r"\label{tab:ice-relative}", r"\begin{tabular}{lrrrr}", r"\toprule",
         r"Phase & TZVPP & QZVPP & DMC & QZVPP--DMC\\", r"\midrule"]
     for r in report["ice_relative"]:

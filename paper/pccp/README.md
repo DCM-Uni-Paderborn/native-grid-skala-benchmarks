@@ -45,7 +45,7 @@ crystal/molecule pairs. The CO2, NH3 and urea lattice energies are -32.066940,
 basis sensitivity. Original triple-zeta values remain archived, and the
 GTH results and uniform ten-solid EOS data are unchanged. The SI additionally
 reports six completed targeted molecular basis pairs, the initial high-energy
-QZ ethane solution and its lower-state restart, and a matched twelve-phase ice
+QZ ethane solution and its lower-state restart, and a complete thirteen-phase ice
 comparison including relative energies to Ih. Five-volume Si, diamond and MgO
 QZ controls document material-dependent structural basis effects. These
 controls do not replace the fixed 70-reaction or ten-solid statistics and do

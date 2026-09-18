@@ -252,7 +252,7 @@ def main():
     report['additional_molecular_basis_controls'] = completion_assessment()
     assert report['additional_molecular_basis_controls'] == read('convergence/molecular-qz-completion-20260917/assessment.json')
     assert (ROOT/'paper/pccp/molecular-additional-basis-table-si.tex').read_text() == completion_table(report['additional_molecular_basis_controls'])
-    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==933
+    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==935
     snapshot=read('paper/pccp/overleaf-source-snapshot.json')
     for name,digest in {**snapshot['files'],**snapshot['pdf_sha256']}.items():
         assert sha(Path('paper/pccp')/name)==digest

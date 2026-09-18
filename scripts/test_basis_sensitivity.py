@@ -1,6 +1,7 @@
 """Numerical and provenance regressions for the reported basis controls."""
 import copy
 import json
+import re
 import unittest
 from unittest.mock import patch
 import basis_sensitivity as basis
@@ -11,12 +12,43 @@ class BasisSensitivityTests(unittest.TestCase):
         report = basis.assess()
         self.assertAlmostEqual(report["crystals"]["CO2"]["basis_shift_kjmol"], 4.3094260471, places=8)
         self.assertAlmostEqual(report["crystals"]["NH3"]["qzvpp"]["lattice_energy_kjmol"], -38.1845506711, places=8)
-        self.assertEqual(len(report["ice"]), 12)
-        self.assertNotIn("XIII", {r["phase"] for r in report["ice"]})
-        self.assertAlmostEqual(report["ice_mae"]["qzvpp"], 1.2329408717, places=8)
-        self.assertAlmostEqual(report["ice_mae"]["tzvpp"], 21.2439143634, places=8)
-        self.assertAlmostEqual(report["ice_relative_mae"]["qzvpp"], .7662762024, places=8)
-        self.assertAlmostEqual(report["ice_relative_mae"]["tzvpp"], 4.0869354226, places=8)
+        self.assertEqual(len(report["ice"]), 13)
+        self.assertIn("XIII", {r["phase"] for r in report["ice"]})
+        self.assertAlmostEqual(report["ice_mae"]["qzvpp"], 1.1607398827, places=8)
+        self.assertAlmostEqual(report["ice_mae"]["tzvpp"], 21.3491532798, places=8)
+        self.assertAlmostEqual(report["ice_relative_mae"]["qzvpp"], .8214372870, places=8)
+        self.assertAlmostEqual(report["ice_relative_mae"]["tzvpp"], 4.1725627527, places=8)
+
+    def test_xiii_pair_and_absolute_relative_error_distinction(self):
+        report = basis.assess()
+        row = next(r for r in report["ice"] if r["phase"] == "XIII")
+        relative = next(r for r in report["ice_relative"] if r["phase"] == "XIII")
+        self.assertAlmostEqual(row["qzvpp"], -57.0356719856, places=8)
+        self.assertAlmostEqual(row["tzvpp"], -79.9420202762, places=8)
+        self.assertAlmostEqual(relative["qzvpp"] - relative["dmc_kjmol"], -1.4282092168, places=8)
+        inputs = []
+        for level in ("tzvpp", "qzvpp"):
+            folder = basis.ROOT / f"benchmarks/DMC-ICE13/basis-controls/XIII/{level}"
+            inp = basis.invariant((folder / "actual-input.inp").read_text())
+            inputs.append(re.sub(r"(?m)^\s*(SYMMETRY_BACKEND|SYMMETRY_REDUCTION_METHOD|EPS_SYMMETRY)\s+[^\n]+\n", "", inp))
+        self.assertEqual(*inputs)
+        stats = report["ice_error_statistics"]
+        self.assertEqual(stats["absolute"]["tzvpp"]["negative_error_count"], 13)
+        self.assertEqual(stats["absolute"]["qzvpp"]["negative_error_count"], 1)
+        self.assertEqual(stats["relative_ih"]["qzvpp"]["count"], 12)
+        self.assertEqual(stats["relative_ih"]["qzvpp"]["maximum_error_phase"], "VII")
+
+    def test_relative_energies_cancel_monomer_reference(self):
+        report = basis.assess()
+        index = json.loads((basis.DATA / "index.json").read_text())
+        for level in ("tzvpp", "qzvpp"):
+            solids = {c["system"]: basis.verified(c)[0] for c in index["cases"]
+                      if (c["kind"], c["level"], c["phase"]) == ("ice", level, "solid")}
+            ih = solids["Ih"]["energy_hartree"] / solids["Ih"]["molecules"]
+            for row in report["ice_relative"]:
+                run = solids[row["phase"]]
+                direct = (run["energy_hartree"] / run["molecules"] - ih) * basis.HA_KJ
+                self.assertAlmostEqual(row[level], direct, places=9)
 
     def test_outlier_is_reported_not_hidden_or_promoted(self):
         report = basis.assess()

@@ -14,7 +14,7 @@ on 17 September 2026.
 | CO2, NH3 and urea, four representations | [Molecular crystals](benchmarks/X23-mini), 24 original base executions, seven numerical controls and twelve paired AE basis/grid controls, with all three selected AE pairs at QZVPP |
 | Six completed targeted molecular basis comparisons and ethane state/grid controls | [Paired molecular controls](benchmarks/dietGMTKN55/basis-controls), 33 executions, separate from the unchanged 70-reaction statistics |
 | Additional CARBHB12/11 and G21EA/25 QZ basis controls | [Additional molecular controls](convergence/molecular-qz-completion-20260917), five converged species and two nonconverged initialization records, whose energies are excluded |
-| Same-twelve-phase ice basis comparison, relative energies to Ih and two symmetry checks | [Ice controls](benchmarks/DMC-ICE13), 28 executions including both molecular references, excluding XIII at both basis levels |
+| Complete thirteen-phase ice basis comparison, relative energies to Ih and two symmetry checks | [Ice controls](benchmarks/DMC-ICE13), 30 executions including both molecular references and XIII at both basis levels |
 | Matched five-volume Si, diamond and MgO basis tests | [Solid basis controls](benchmarks/Goldzak12/basis-controls), 15 QZVPP points and three TZVPP runtime checks, separate from the uniform ten-solid comparison |
 | Ten-solid structural comparison, in the ESI | [LC10](benchmarks/Goldzak12), 352 unique energies, 36 independent EOS, 40 method-solid comparisons |
 | ACONF cutoff and water radial/angular quadrature | [Cutoff](convergence/cutoff/aconf8-b200) and [quadrature](convergence/atom-grid) |
