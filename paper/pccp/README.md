@@ -55,6 +55,16 @@ species and the two required SCF initialization records are preserved in
 `convergence/molecular-qz-completion-20260917`. The latter are not benchmark
 energies. Unreported active runs and unrelated operational diagnostics are excluded.
 
+Five additional Si QZVPP energies complete its matched ten-volume EOS, while
+the five earlier QZVPP points are reused. The separate sampling analysis and
+execution index are in `convergence/si-eos-extension-20260920`; SI Table S20
+reports full and endpoint-omission fits. The additional sampling confirms
+the increased Si contraction and stiffness without removing fit-window
+sensitivity of the bulk modulus. Diamond and MgO remain five-volume controls.
+The published uniform ten-solid statistics and all original execution records
+are unchanged. The fit snapshot uses Python 3.12.14 and NumPy 2.3.5; other
+NumPy/LAPACK environments can differ in insignificant last fit digits.
+
 ## Rebuilding
 
 From this directory, run:
@@ -62,6 +72,7 @@ From this directory, run:
 ```bash
 python3 -B ../../scripts/compare_molecular_interfaces.py --write
 python3 -B ../../scripts/molecular_completion_controls.py --write
+python3 -B ../../scripts/si_eos_extension.py --write
 python3 build_submission_assets.py
 python3 analyse_derivative_checks.py \
   --report ../../convergence/derivatives/periodic-water-20260909/validated-results.json \
