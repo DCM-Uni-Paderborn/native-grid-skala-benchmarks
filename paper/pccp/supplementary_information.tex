@@ -5,8 +5,15 @@
 \usepackage[margin=2.2cm]{geometry}
 \usepackage{amsmath,booktabs,longtable,array,graphicx,microtype}
 \usepackage[super,sort&compress]{natbib}
+\usepackage{xcolor,xr-hyper}
 \usepackage[colorlinks=true,allcolors=teal]{hyperref}
+
+\externaldocument[paper-]{main}[main.pdf]
 \usepackage{placeins}
+
+
+
+
 \newcommand{\CPtwoK}{CP2K}\newcommand{\Skala}{Skala}
 \newcommand{\GPW}{GPW}\newcommand{\GAPW}{GAPW}\newcommand{\GTH}{GTH}
 \newcommand{\GauXC}{GauXC}\newcommand{\PySCF}{PySCF}
@@ -22,27 +29,28 @@
 \title{Electronic Supplementary Information\\[6pt]\large Native implementation of the machine-learned Skala exchange--correlation functional in CP2K: Unified one-centre reconstruction for molecular and condensed-phase calculations}
 \author{Johann Pototschnig, Franz P\"oschel,\\J\"urg Hutter, and Thomas D. K\"uhne}
 \date{}
+\graphicspath{{figures/}}
 \begin{document}
 \maketitle
 \tableofcontents
 \clearpage
 
-\section{Scope and Notation}
+\section{Notation and statistical measures}
 \label{sec:scope}
 
-This Electronic Supplementary Information (ESI) documents the numerical definition and validation of the molecular and condensed-phase comparisons. Self-consistent-field (SCF) convergence, basis resolution, and grid resolution are assessed separately. The SCF solvers are orbital transformation (OT) and diagonalization. Electronic occupations and the overlap-matrix trace define the explicitly treated particle number. Integration on the model quadrature provides an additional discretization diagnostic. A nonzero quadrature error is therefore distinct from an incorrect occupation count. The calculations do not renormalize the model density.
+Unless stated otherwise, reported total energies and energy differences use kJ~mol$^{-1}$, forces use $E_h$/bohr, and stresses use GPa. Band gaps and their errors use eV. The molar entity is specified where energies refer to simulation cells or atoms rather than molecules or reactions. Plane-wave and relative cutoffs are given in Ry. A grid designation such as 150/770 gives the number of radial points and Lebedev angular points, respectively.
 
-The Gaussian and plane-wave (GPW) and Gaussian and augmented-plane-wave (GAPW) methods provide the native density representations. Their exchange--correlation (XC) fields enter Skala. GAPW-XC denotes the XC-specific augmented density decomposition, and not merely the name of an input switch. All-electron (AE) GAPW is denoted GAPW-AE. Goedecker--Teter--Hutter (GTH) effective-core potentials (ECPs) define the pseudopotential Hamiltonian. GTH-direct and GTH-1C denote GAPW-GTH with direct valence and one-centre (1C) reconstructed fields, respectively. The mixed molecular and solid protocols combine AE and GTH treatments. They are not hybrid XC functionals. AE and GAPW-XC already contain their intrinsic one-centre terms. The independent with/without comparison applies to the two ordinary pseudopotential GAPW routes. Compact tables use GX for GAPW-XC/GTH, AE for GAPW-AE, and HD/HOC for the mixed AE/GTH protocols with direct/1C GTH fields, respectively.
+TZVPP-ae and QZVPP-ae denote the all-electron bases of the UZH protocol, while TZVP-GTH and TZV2P-GTH denote the bases used with GTH pseudopotentials.
 
-Machine-readable reaction values, selected equation-of-state (EOS) curves, molecular-crystal total energies, and exact inputs are organized separately in the accompanying benchmark repository. The numerical tables below are generated from those datasets rather than transcribed from working logs.
+Reference errors are calculated minus reference values. ME denotes the mean signed error, MAE the mean absolute error, and RMSE the root-mean-square error. Direct differences between two calculated protocols are reported as the mean difference (MD), mean absolute difference (MAD), and root-mean-square difference (RMSD). These measures are distinct from differences between reference-error statistics.
 
-\section{Reconstruction and Derivative Consistency}
+\section{Reconstruction, derivative and symmetry consistency}
 \label{sec:reconstruction}
 
 \subsection{Spin-gradient cross terms}
 \label{sec:spin-gradients}
 
-Write the two reconstructed gradient fields as $\mathbf g_\alpha=\widetilde{\mathbf g}_\alpha+\mathbf g^h_\alpha-\mathbf g^s_\alpha$ and analogously for $\beta$. Their three spin invariants are $\gamma_{\alpha\alpha}=\mathbf g_\alpha^2$, $\gamma_{\beta\beta}=\mathbf g_\beta^2$, and $\gamma_{\alpha\beta}=\mathbf g_\alpha\cdot\mathbf g_\beta$. For example,
+Write the two reconstructed gradient fields as $\mathbf g_\alpha=\widetilde{\mathbf g}_\alpha+\mathbf g^h_\alpha-\mathbf g^s_\alpha$ and analogously for $\beta$, where $\mathbf g_\sigma=\nabla\rho_\sigma$ for spin $\sigma\in\{\alpha,\beta\}$ and the tilde and superscripts $h,s$ identify the smooth, hard, and soft contributions. Their three spin invariants are $\gamma_{\alpha\alpha}=\mathbf g_\alpha^2$, $\gamma_{\beta\beta}=\mathbf g_\beta^2$, and $\gamma_{\alpha\beta}=\mathbf g_\alpha\cdot\mathbf g_\beta$, respectively. Expanding the cross-spin invariant gives
 \begin{align}
 \gamma_{\alpha\beta}={}&\widetilde{\mathbf g}_\alpha\cdot\widetilde{\mathbf g}_\beta
 +\mathbf g^h_\alpha\cdot\mathbf g^h_\beta+\mathbf g^s_\alpha\cdot\mathbf g^s_\beta\nonumber\\
@@ -50,191 +58,1246 @@ Write the two reconstructed gradient fields as $\mathbf g_\alpha=\widetilde{\mat
 -\widetilde{\mathbf g}_\alpha\cdot\mathbf g^s_\beta-\mathbf g^s_\alpha\cdot\widetilde{\mathbf g}_\beta\nonumber\\
 &-\mathbf g^h_\alpha\cdot\mathbf g^s_\beta-\mathbf g^s_\alpha\cdot\mathbf g^h_\beta.
 \end{align}
-The six component vectors admit $\binom{6}{2}=15$ unordered off-diagonal dot products. Three are opposite-spin products within the same smooth, hard, or soft component, while twelve couple different components. Thus ``15 cross terms'' counts all off-diagonal pairs, not fifteen terms all absent from three independent spin-resolved evaluations. Separate smooth/hard/soft evaluations also combine diagonal terms with the wrong nonlinear structure. Reconstructing the fields first avoids this ambiguity and retains the nonlocal coupling of the model, which cannot be recovered by adding local algebraic corrections afterwards.
+The six component vectors give $\binom{6}{2}=15$ unordered off-diagonal dot products. Three are opposite-spin products within the same smooth, hard, or soft component, while twelve couple different components.  Separate smooth/hard/soft evaluations also combine diagonal terms with the wrong nonlinear structure. Reconstructing the fields first avoids this ambiguity and retains the nonlocal coupling of the model, which cannot be recovered by adding local algebraic corrections afterwards.
 
-\subsection{The discrete adjoint and moving grids}
-\label{sec:adjoint}
+\subsection{Periodic weights and interpolation}
+\label{sec:periodic-weights}
 
-For regular-grid values $u_g$ and atom-grid interpolation coefficients $I_{ig}$,
+This section specifies the discrete construction behind main-text Eqs.~\eqref{paper-eq:partition} and \eqref{paper-eq:descriptor-weights}.
+
+\paragraph{Two centre sets.}
+For a finite set $\mathcal C$ of atom-image centres, let $\mathbf R_a$ be the position of centre $a$, $r_a=|\mathbf r-\mathbf R_a|$, and $R_{ab}=|\mathbf R_a-\mathbf R_b|$. The unnormalized Becke-like shapes are
 \begin{equation}
- u_i=\sum_g I_{ig}u_g+u_i^h-u_i^s,
- \qquad
- \frac{\partial E}{\partial u_g}=\sum_i I_{ig}\frac{\partial E}{\partial u_i}.
+ q_a^{\mathcal C}(\mathbf r)=\prod_{b\in\mathcal C\setminus\{a\}}
+ \frac{1-B(\mu_{ab})}{2},\qquad
+ \mu_{ab}=\frac{r_a-r_b}{R_{ab}},\qquad
+ B=f\circ f\circ f,\quad f(x)=\tfrac12x(3-x^2).
+ \label{eq:partition-shapes}
 \end{equation}
-The reverse mapping uses the transpose of the forward interpolation, with the energy quadrature weights included consistently in the derivative. Hard and soft adjoints carry plus and minus signs. This applies separately to density, its Cartesian gradient components, and kinetic-energy density. At fixed orbital density matrix $P$, the explicit XC derivative for a nuclear coordinate or strain parameter $\lambda$ includes both field and geometric terms,
+The pair coordinate $\mu_{ab}$ enters the switching function $B$, obtained by composing the cubic polynomial $f$ three times, as indicated by $\circ$.
+The pair coordinate is clipped to $[-1,1]$ to account for roundoff. No atomic-radius adjustment is applied. Normalizing these products over $\mathcal C$ yields its partition. The energy layout $\mathcal I_A$ contains the retained images of every atom around target $A$, whereas $\mathcal S_A\subset\mathcal I_A$ contains only images of $A$. The products are recomputed for each set. Removing other atoms from the normalization alone would leave their pair factors in the products, yielding a different descriptor window. The energy weight uses the normalized $q^{\mathcal I_A}$. The descriptor weight uses the window of the normalized $q^{\mathcal S_A}$ defined below.
+
+\paragraph{Finite image layouts.}
+Let $H$ be the cell matrix, $p_d\in\{0,1\}$ the image periodicity in direction $d$, and $\mathrm{nint}$ nearest-integer rounding. For each source atom $B$, the layout shared by all points of target block $A$ uses
 \begin{equation}
- \left.\frac{\partial E_{\rm xc}}{\partial\lambda}\right|_P
- =\sum_i\frac{\partial E_{\rm xc}}{\partial u_i}
-         \left.\frac{\partial u_i}{\partial\lambda}\right|_P
- +\left.\frac{\partial E_{\rm xc}}{\partial\lambda}\right|_{u}.
+ b_{BA,d}=p_d\,\mathrm{nint}\!\left([H^{-1}(\mathbf R_A-\mathbf R_B)]_d\right),
+ \qquad n_d=b_{BA,d}-p_d,\ldots,b_{BA,d}+p_d,
+ \qquad \mathbf R_{B\mathbf n}=\mathbf R_B+H\mathbf n.
+ \label{eq:partition-images}
 \end{equation}
-The last term encompasses explicit quadrature, partition, coordinate, and model-environment dependence. The total-energy force and stress additionally use electronic stationarity and the Gaussian-basis/overlap Pulay contributions, including cell and reciprocal-lattice dependence. The XC energy alone is not stationary in $P$. An adjoint test at fixed fields is necessary but does not replace a self-consistent total-energy finite-difference (FD) test.
+The columns of $H$ are the cell vectors, $d=1,2,3$ labels lattice directions, and $p_d$ is one for a periodic direction and zero otherwise. The integer $b_{BA,d}$ centres the image range, while the integer vector $\mathbf n$ identifies the image at $\mathbf R_{B\mathbf n}$.
+Thus, the three-dimensional periodic layout contains 27 images per atom, with a one-shell extension about the rounded fractional displacement. Within a target block, the layout remains fixed instead of being rebuilt by nearest-image selection at each quadrature point. The self-image layout uses the same rule with $B=A$. The normalized weights sum to unity within each retained layout. Enlarging that layout is a distinct numerical convergence question. Products are evaluated with screening at floating-point precision and a logarithmic fallback to avoid underflow.
+
+\paragraph{Descriptor window.}
+The internal quadrature weight uses a window of the self-image partition, $D_{Ai}=w_{Ai}T(d_A)$, with
+\begin{equation}
+ T(d)=\begin{cases}
+ 0,&d\leq\epsilon,\\
+ x^3(10-15x+6x^2),&\epsilon<d<10\epsilon,\\
+ 1,&d\geq10\epsilon,
+ \end{cases}
+ \qquad x=\frac{d-\epsilon}{9\epsilon},\qquad \epsilon=10^{-12}.
+ \label{eq:descriptor-window}
+\end{equation}
+The argument $d=d_A(\mathbf r_{Ai})$ is the target atom's self-image partition at grid point $i$, $\epsilon$ is its screening threshold, and $x$ rescales the transition interval to $[0,1]$.
+The quintic taper has vanishing first and second derivatives at its endpoints. It retains the unpartitioned radial--angular weight over the interior and suppresses only the small-weight tail of the target atom's self-image partition. Other atoms and their augmentation fields remain visible inside this domain. For isolated molecular atom-composite calculations, the auxiliary FFT cell is still wrapped in the interpolation and image partition. This numerical construction does not change the nonperiodic electrostatic boundary condition. Increasing molecular cell padding tests its residual effect.
+
+\paragraph{Weight derivatives on moving atom grids.}
+Let $\overline W_{Ai}=\partial E_{\rm xc}/\partial W_{Ai}$ and $\overline D_{Ai}=\partial E_{\rm xc}/\partial D_{Ai}$ denote the model's weight adjoints at fixed fields and coordinates. For a geometric parameter $\lambda$, their contribution is
+\begin{equation}
+ \left(\frac{dE_{\rm xc}}{d\lambda}\right)_{\!\rm weights}
+ =\sum_{Ai}\left(\overline W_{Ai}\frac{dW_{Ai}}{d\lambda}
+                   +\overline D_{Ai}\frac{dD_{Ai}}{d\lambda}\right).
+ \label{eq:weight-chain-rule}
+\end{equation}
+At fixed radial--angular base weights, $dW_{Ai}/d\lambda=w_{Ai}\,dp_{A\mathbf0}/d\lambda$ and $dD_{Ai}/d\lambda=w_{Ai}T'(d_A)\,dd_A/d\lambda$, where $T'$ denotes the derivative of the window with respect to its argument. These adjoints are distinct from the field adjoints in main-text Eq.~\eqref{paper-eq:field-adjoints}.
+
+Write the moving quadrature point as $\mathbf r_{Ai}=\mathbf R_A+\mathbf s_{Ai}$ with fixed local offset $\mathbf s_{Ai}$. For a fixed cell and retained image layout, translation invariance gives the energy-partition derivative
+\begin{equation}
+ \frac{dp_{A\mathbf0}(\mathbf r_{Ai})}{d\mathbf R_C}
+ =\left.\frac{\partial p_{A\mathbf0}}{\partial\mathbf R_C}\right|_{\mathbf r}
+ -\delta_{AC}\sum_B
+       \left.\frac{\partial p_{A\mathbf0}}{\partial\mathbf R_B}\right|_{\mathbf r},
+ \label{eq:moving-partition}
+\end{equation}
+where each partial derivative moves all retained images of its base atom at fixed evaluation point $\mathbf r$, $C$ labels the displaced atom, and the Kronecker delta $\delta_{AC}$ is one when $A=C$ and zero otherwise. The second term accounts for motion of the target grid. In contrast, the self-image window satisfies
+\begin{equation}
+ d_A(\mathbf R_A+\mathbf s_{Ai};\{\mathbf R_A+H\mathbf L\})
+ =d_A(\mathbf s_{Ai};\{H\mathbf L\}),\qquad
+ \frac{dD_{Ai}}{d\mathbf R_C}=0.
+ \label{eq:self-window-translation}
+\end{equation}
+Thus, its centre and target-grid derivatives cancel under nuclear translation, while the energy-partition, field, and explicit model-coordinate derivatives remain.
+
+Cell strain changes the self-image separations. For $H\mapsto(1+\varepsilon)H$, $\partial(H\mathbf L)_a/\partial\varepsilon_{bc}=\delta_{ab}(H\mathbf L)_c$, where $\varepsilon$ is the infinitesimal strain tensor, $1$ denotes the identity matrix, $\mathbf L$ is an integer lattice-image vector, and $a,b,c$ are Cartesian component indices. For either normalized partition $f=p_{A\mathbf0}$ or $f=d_A$, the explicit image-translation term is
+\begin{equation}
+ \left.\frac{\partial f}{\partial\varepsilon_{ab}}\right|_{\rm images}
+ =\sum_{(B,\mathbf L)\in\mathcal C}
+    \frac{\partial f}{\partial R_{B\mathbf L,a}}(H\mathbf L)_b,
+ \label{eq:partition-image-strain}
+\end{equation}
+with the appropriate energy or self-image set $\mathcal C$. Both weight adjoints therefore contribute to the strain derivative, including the factor $T'(d_A)$ for the descriptor window. This is only the explicit image term. The remaining coordinate, interpolation, and reconstructed-field contributions must also be included as in main-text Eq.~\eqref{paper-eq:geometric-derivative}. The total force and stress additionally require electronic stationarity and the basis/overlap Pulay terms. These identities apply to a fixed image layout and do not differentiate discrete changes in image selection.
+
+\paragraph{Regular-grid interpolation.}
+For the smooth fields, $I_{Ai,g}$ in main-text Eq.~\eqref{paper-eq:composite} is a tensor product of twelve-node Lagrange interpolants. In each grid direction, if $t$ is the fractional coordinate relative to the lower grid point, the offsets are $j=-5,\ldots,6$ and
+\begin{equation}
+ L_j(t)=\prod_{\substack{m=-5\\m\ne j}}^{6}\frac{t-m}{j-m},
+ \qquad I_{Ai,g}=\prod_{d=1}^{3}L_{j_d}(t_d).
+ \label{eq:smooth-interpolation}
+\end{equation}
+The polynomial $L_j$ is the Lagrange weight of stencil node $j$, with $m$ running over the other nodes. For regular-grid point $g$, $j_d$ is its stencil offset in direction $d$ and $t_d$ is the target point's local grid coordinate in that direction.
+Periodic or wrapped auxiliary-grid indices are reduced modulo the grid dimensions. Density, Cartesian density-gradient components, and kinetic-energy density use the same stencil. The reverse map accumulates their adjoints using the exact transpose of the interpolation. Spatial derivatives use derivatives of the same interpolation polynomials, transformed from grid to Cartesian coordinates. An independently interpolated potential would not be that transpose.
+
+\paragraph{Neighbouring one-centre fields.}
+The hard-minus-soft fields of the target atom's central image are available directly on its grid. Other centres and noncentral images are transferred using radial quintic Hermite interpolation and the retained real-spherical-harmonic expansion on the source Lebedev grid. Radial slopes use neighbouring-node secants and curvatures use three-node differences, with one-sided endpoint treatment. The angular interpolation kernel has the form
+\begin{equation}
+ K_j(\widehat{\mathbf r})=\omega_j\sum_{\ell m}^{\rm retained}
+ Y_{\ell m}(\widehat{\mathbf r}_j)Y_{\ell m}(\widehat{\mathbf r}),
+ \label{eq:angular-interpolation}
+\end{equation}
+where $\omega_j$ are the source angular weights, $Y_{\ell m}$ are real spherical harmonics of degree $\ell$ and order $m$, and $\widehat{\mathbf r}_j$ and $\widehat{\mathbf r}$ are the source-node and target directions relative to the source centre. Derivatives of $K_j$ and the differentiated radial interpolant provide the Cartesian derivatives. The same coefficients are used in reverse projection.
+
+This field-image sum is distinct from the one-shell partition layout. Around the source image selected relative to each target point, the search extends by $\lceil r_c\lVert(H^{-1})_{d,:}\rVert\rceil+1$ images in every periodic direction, where $r_c$ is the retained radial support radius of the source fields, $\lVert(H^{-1})_{d,:}\rVert$ is the Euclidean norm of row $d$ of the inverse cell matrix, and $\lceil\cdot\rceil$ rounds upward to an integer. Only points inside that support and the outermost source radial node contribute. The central self contribution is omitted from this sum because it has already been included. Consequently, the descriptor domain is set by the self-image window, whereas the reconstructed fields include all contributing centres found within the separate finite-support search.
+
+
+\paragraph{Kernel-level adjoint checks.}
+We also test the atom-local interpolation and its hard-minus-soft back-projection using routines extracted from the CP2K source and retaining its atom-grid and spherical-harmonic types. For input fields $x$ and target-field adjoints $y$, the scalar-product check compares $L=\langle Ax,y\rangle$ with $R=\langle x,A^*y\rangle$, retaining the negative soft-field contributions. Here, $A$ denotes the linear interpolation map rather than an atom index, $A^*$ its adjoint, and $\langle\cdot,\cdot\rangle$ the discrete scalar product. The test includes density, Cartesian density gradients, and kinetic-energy density for one and two spin channels. The implemented acceptance criterion is $|L-R|/\max(1,|L|)\leq2\times10^{-13}$. The test reports a pass rather than the measured maximum of this quantity.
+
+Separate comparisons of equivalent interpolation/back-projection variants vary the three field-component masks and use 1, 2, 4, 8, and 16 OpenMP threads. The test cases include nonperiodic, orthogonal periodic, and triclinic periodic cells, translated image points, target-ownership partitions, and empty local ownership. The normalized difference is $\epsilon_{\rm variant}=\lVert v-v_{\rm ref}\rVert_\infty/\max(1,\lVert v_{\rm ref}\rVert_\infty)$, where $v$ collects the hard and soft potential arrays, $v_{\rm ref}$ is the corresponding reference-variant result, and $\lVert\cdot\rVert_\infty$ selects the largest absolute component. Table~\ref{tab:adjoint-validation} distinguishes these measured differences from the scalar-product tolerance. These kernel checks use fixed input fields.
+
+\begin{table}[htbp]
+
+\centering\small
+\caption{Discrete atom-local interpolation and back-projection checks. The scalar-product entry gives the tolerance satisfied by the test, not a measured error. The variant comparisons report the maximum normalized differences.}
+\label{tab:adjoint-validation}
+\begin{tabular}{@{}p{0.33\textwidth}p{0.32\textwidth}p{0.27\textwidth}@{}}
+\toprule
+Check & Scope & Result \\
+\midrule
+Adjoint scalar-product identity & $\rho$, $\nabla\rho$, $\tau$ in one or two spin channels & Passed $2\times10^{-13}$ criterion \\
+Back-projection variants & Bounds/exception-checked build & $6.1088\times10^{-16}$ \\
+Back-projection variants & Optimized build & $5.7513\times10^{-16}$ \\
+Forward-field equivalence & Full/values-only interpolation & Bitwise identical fields \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier
 
 \subsection{Finite-difference protocol}
 \label{sec:fd}
+
+Self-consistent total-energy finite-difference (FD) tests complement the fixed-field adjoint checks.
 
 For a displaced coordinate $R_{A,x}$, the central FD estimate is
 \begin{equation}
  F^{\rm FD}_{A,x}(h)=-\frac{E(R_{A,x}+h)-E(R_{A,x}-h)}{2h}.
 \end{equation}
-For a homogeneous $xx$ strain, both cell and Cartesian coordinates are transformed while fractional coordinates remain fixed. In the positive-pressure stress convention,
+Here, $F^{\rm FD}_{A,x}$ is the force on atom $A$ along $x$, $h$ is the displacement step, and $E$ is the self-consistent total energy with all other nuclear coordinates fixed.
+For a homogeneous $xx$ strain, both cell and Cartesian coordinates are transformed, while fractional coordinates remain fixed. The positive-pressure stress convention gives
 \begin{equation}
  \sigma_{xx}^{\rm FD}(\eta)=-\frac{E(+\eta)-E(-\eta)}{2\eta\Omega}.
 \end{equation}
-At least two step sizes distinguish truncation error from SCF noise. An SCF threshold tightened for these checks does not change the production thresholds. A molecular coordinate-scaling virial is not a periodic stress-tensor validation, and energy agreement under symmetry reduction does not establish force equivalence after a symmetry-breaking displacement.
+The dimensionless step $\eta$ is the applied $xx$ strain, $\Omega$ is the unstrained cell volume, and $E(\pm\eta)$ are the total energies of the strained structures used to estimate the diagonal stress $\sigma_{xx}^{\rm FD}$.
+Two step sizes distinguish truncation error from SCF noise.
 
-\input{derivative-results}
+Self-consistent checks use one water molecule in a periodically repeated 8~\AA{} cube at $\Gamma$, without D3, to isolate the native electronic derivatives. The grid settings are 400/60~Ry, five multigrids, and 100 radial/434 angular points. The basis/core and reconstruction definitions match the corresponding production representations. The first hydrogen is displaced along $x$ with a common reference step $h=10^{-3}$~bohr. The common homogeneous $xx$ strain is $\eta=10^{-4}$, a dimensionless quantity. Repeating the checks with $h/2=5\times10^{-4}$~bohr and $\eta/2=5\times10^{-5}$ tests step-size sensitivity. The OT threshold is $10^{-9}$. The regular-grid dimensions remain unchanged under these perturbations.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Signed FD minus analytic derivatives at common reference steps $h=10^{-3}$~bohr and $\eta=10^{-4}$. The half-step columns report step-size sensitivity.}
+\label{tab:derivatives}
+\begin{tabular}{lrrrr}
+\toprule
+& \multicolumn{2}{c}{Force error ($E_h$/bohr)} & \multicolumn{2}{c}{Stress error (GPa)}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Representation & $\Delta F(h)$ & $\Delta F(h/2)$ & $\Delta\sigma(\eta)$ & $\Delta\sigma(\eta/2)$\\
+\midrule
+GPW/GTH & $+2.28\times10^{-7}$ & $+2.239\times10^{-6}$ & $+3.8\times10^{-5}$ & $-2.08\times10^{-4}$ \\
+GAPW-XC/GTH & $-3.77\times10^{-7}$ & $+2.380\times10^{-6}$ & $+1.2\times10^{-5}$ & $-3.32\times10^{-4}$ \\
+GAPW-AE & $+2.855\times10^{-6}$ & $-2.404\times10^{-6}$ & $+7\times10^{-6}$ & $-4.72\times10^{-4}$ \\
+GAPW-GTH direct & $+2.12\times10^{-7}$ & $+1.414\times10^{-6}$ & $+4.4\times10^{-5}$ & $-1.85\times10^{-4}$ \\
+GAPW-GTH one-centre & $-2.726\times10^{-6}$ & $-1.977\times10^{-6}$ & $-3.2\times10^{-5}$ & $-1.7\times10^{-5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These checks test the self-consistent total-energy derivative, including the reconstruction and moving-grid terms, rather than only model differentiation at fixed fields. The smaller steps do not uniformly reduce the error because energy subtraction amplifies finite SCF and numerical noise. The test covers one Cartesian force component and one diagonal strain component in this periodic $\Gamma$-point system.
+
 \FloatBarrier
 
-\section{Molecular Numerical Settings and Convergence}
+\subsection{Full and symmetry-reduced meshes}
+\label{sec:symmetry-meshes}
+
+Symmetry reduction changes the quadrature used to evaluate a given Brillouin-zone integral. CP2K's k-point implementation accounts for integration weights, rotations of orbital components, and Bloch-phase conventions.\cite{CP2KDynamics2026,Alizadeh2026PeriodicGFN2} For finite-difference forces, each displaced geometry must be evaluated either on the full k-point mesh or using symmetry operations valid for that geometry.
+
+We test symmetry reduction for C and MgO by comparing total energies obtained with the full $4\times4\times4$ k-point mesh and its symmetry-reduced representation containing 10 irreducible points. Geometry and all other computational settings are identical within each comparison. The full point-group reduction uses a symmetry tolerance of $10^{-8}$. Table~\ref{tab:symmetry} lists the absolute energy difference per reported cell, showing the identical AE carbon entries only once.
+
+\begin{table}[htbp]
+\centering
+\caption{Selected full/reduced-grid energy checks. The two GAPW-AE/GTH variants reuse the GAPW-AE carbon calculation, which is shown only once. $|\Delta E|$ is in kJ~mol$^{-1}$ of simulation cells.}
+\label{tab:symmetry}
+\begin{tabular}{llr}
+\toprule
+System & Representation & $|\Delta E|$\\
+\midrule
+C & GAPW-XC/GTH & 0.0200\\
+C & GAPW-AE & 0.0229\\
+MgO & GAPW-XC/GTH & 0.0291\\
+MgO & GAPW-AE/GTH (direct) & 0.0493\\
+MgO & GAPW-AE/GTH (1C) & 0.0378\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+ Mixed MgO uses GTH Mg and AE O. Only the Mg valence-field representation changes between its direct and one-centre variants, while the O reconstruction is retained. The molecular-crystal production uses full point-group reduction of $3^3$ meshes.
+
+\FloatBarrier
+
+\section{Numerical settings and convergence}
 \label{sec:molecular-settings}
-
-\subsection{Basis, grid, and boundary conditions}
-\label{sec:molecular-basis}
-
-The 70-reaction comparison uses the University of Zurich (UZH) 2026.2 AE TZVPP-MOLOPT-PBE-ae basis and corresponding explicit-electron Hamiltonian where available. The GTH part uses TZV2P-MOLOPT-PBE-GTH bases and GTH-PBE potentials.\cite{Mirhosseini2026UZH,Goedecker1996} The all-GTH protocol uses GAPW-XC throughout. The mixed protocols share the light-element AE energies and use GTH for the retained heavy-element species, including Bi, Te, and I. This differs from the def2-based AE/ECP protocol in the molecular GauXC paper.
-
-The molecule-centred cells add 25~\AA{} to each molecular Cartesian extent. Cell and Poisson periodicity are disabled and the analytic isolated-system Poisson solver is used. The production atom-composite quadrature has 100 radial points and the 434-point Lebedev rule. Plane-wave/relative cutoffs are 400/60~Ry for GAPW-XC/GTH and 640/60~Ry for the shared AE route. The executed inputs document the corresponding GTH one-centre settings. OT and diagonalization thresholds are $5\times10^{-7}$ and $5\times10^{-6}$, respectively. The threshold controls the solver residual, not an energy error in kcal~mol$^{-1}$.
-
-Basis/core changes must be kept distinct from quadrature refinement. The reported AE/GTH differences are not a basis-only convergence series, and no complete-basis limit is inferred from them. In the paired controls below, TZVPP and QZVPP denote the UZH triple- and quadruple-zeta valence plus double-polarization AE bases, respectively.
-
-\input{molecular-basis-controls-si}
-
-\subsection{Regular-grid cutoff}
-\label{sec:cutoff}
-
-The paired conformational test uses the same two ACONF geometries and evaluates the relative energy within each representation. The 800~Ry result of that representation is the numerical reference. The small difference between the two 800~Ry relative energies is not set to zero: convergence within a representation and agreement between representations are separate questions.
-
-\input{cutoff-table}
-
-At 400~Ry, the deviations from the respective 800~Ry conformational energies are $+0.002152$~kcal~mol$^{-1}$ for GPW and $-0.000181$~kcal~mol$^{-1}$ for GAPW-XC. The faster GAPW-XC convergence supports separating hard local XC structure from the smooth auxiliary grid. This is an observable-specific cutoff test, distinct from comparison with an AE Hamiltonian. The complete inputs and outputs accompany the table.
-
-\subsection{Radial and angular quadrature}
-\label{sec:quadrature}
-
-\input{atom-grid-table}
-
-The water test refines radial and angular integration independently of the plane-wave representation. The electron integral is retained as a diagnostic, without rescaling the density. Neither the small water total-energy differences nor the conformational cutoff differences define a universal reaction-energy error bound. Frozen-density calculations that did not satisfy the stated SCF acceptance are not used as converged-energy evidence.
 
 \subsection{Molecular cell padding}
 \label{sec:padding}
 
-Selected matched isolated-system calculations tested added extents of 22, 24, and 25~\AA{}. The maximum species-energy changes are 0.159, 0.189, and 0.348~$\mu E_h$ for 22--24, 24--25, and 22--25~\AA{}, respectively. The corresponding maximum reaction-energy changes are 0.000138, 0.000163, and 0.000298~kcal~mol$^{-1}$. Maximum changes of the atom-grid electron integral are $7.94\times10^{-8}$, $1.43\times10^{-7}$, and $9.72\times10^{-8}$ electrons. These comparisons retain the nonperiodic analytic electrostatic treatment. Old periodic or differently centred cells are not pooled with the final molecular data.
+Isolated-system calculations with otherwise identical settings compare added extents of 22, 24, and 25~\AA{}. The maximum species-energy changes are 0.000417, 0.000496, and 0.000914~kJ~mol$^{-1}$ for 22--24, 24--25, and 22--25~\AA{}, respectively. The corresponding maximum reaction-energy changes are 0.000577, 0.000682, and 0.001247~kJ~mol$^{-1}$. Maximum changes of the atom-grid electron integral are $7.94\times10^{-8}$, $1.43\times10^{-7}$, and $9.72\times10^{-8}$ electrons. These comparisons retain the nonperiodic analytic electrostatic treatment.
 \FloatBarrier
 
-\section{Molecular Reaction Data and Cross-Code Comparisons}
+\subsection{Regular-grid cutoff}
+\label{sec:cutoff}
+
+% Source: ../native-grid-skala-rosi-backup-2026-08-24/validation-uzh/runs/h2o-gapw-ae/c{cutoff}/
+% ENERGY| totals from output.out; CP2K revision eeae3c3f59.
+% Inputs: EPS_SCF 1e-6; mixing ALPHA 0.30 at 400/600/800 and 0.10 at 1000/1200 Ry.
+% Hartree to kJ/mol: 2625.4996394799.
+% E_h: 400 -76.430131037473203
+% E_h: 600 -76.430077271496245
+% E_h: 800 -76.430076554373215
+% E_h: 1000 -76.430074145448401
+% E_h: 1200 -76.430077309905073
+
+Table~\ref{tab:ae-cutoff} examines the GAPW-AE total energy of H$_2$O at fixed atom quadrature. The notation $E(E_{\rm cut})$ denotes the total energy at plane-wave cutoff $E_{\rm cut}$. The ACONF series below instead evaluates a conformational energy difference.
+
+\begin{table}[htbp]
+\centering\small
+
+\caption{Plane-wave cutoff dependence of the H$_2$O GAPW-AE total energy with the QZVPP-ae basis, 50 radial points and the 50-point Lebedev rule for both elements. The relative cutoff is fixed at 60~Ry. The molecule is placed in a cubic 20~\AA{} cell with nonperiodic boundary conditions and the analytic isolated-system Poisson solver. Differences are $\Delta E=E(E_{\rm cut})-E(1200~\mathrm{Ry})$.}
+\label{tab:ae-cutoff}
+\begin{tabular}{rr}
+\toprule
+Cutoff/Ry & $\Delta E$/kJ~mol$^{-1}$\\
+\midrule
+400 & $-0.141062$ \\
+600 & $+0.000101$ \\
+800 & $+0.001984$ \\
+1000 & $+0.008308$ \\
+1200 & $0.000000$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The deviations at 600--1200~Ry are small but non-monotonic. The atom grid is held fixed here. Radial and angular quadrature are considered separately in Sec.~\ref{sec:quadrature}.
+\FloatBarrier
+
+
+The conformational-energy comparison uses the same two ACONF geometries and the same Gaussian basis and GTH Hamiltonian for GPW and GAPW-XC. Each series is referenced to its own 800~Ry conformational energy. The table also shows the difference between representations at 800~Ry.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Energy difference between the two ACONF conformations in kJ mol$^{-1}$. Both GPW and GAPW-XC use the TZV2P-GTH basis. Each error is relative to its own 800 Ry result. The relative cutoff is 60 Ry.}
+\label{tab:aconf-cutoff}
+\begin{tabular}{rrrrr}
+\toprule
+Cutoff/Ry & GPW & GAPW-XC & $\Delta$GPW & $\Delta$GAPW-XC\\
+\midrule
+240 & 3.242002 & 3.040638 & 0.114646 & -0.078099 \\
+280 & 2.945569 & 3.093691 & -0.181786 & -0.025041 \\
+320 & 3.126670 & 3.118586 & -0.000690 & -0.000146 \\
+360 & 3.124540 & 3.119632 & -0.002816 & 0.000900 \\
+400 & 3.136360 & 3.117980 & 0.009004 & -0.000757 \\
+480 & 3.140075 & 3.118364 & 0.012715 & -0.000372 \\
+560 & 3.129791 & 3.118335 & 0.002431 & -0.000397 \\
+640 & 3.127929 & 3.118323 & 0.000569 & -0.000414 \\
+800 & 3.127360 & 3.118733 & 0.000000 & 0.000000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\FloatBarrier
+
+\subsection{Radial and angular quadrature}
+\label{sec:quadrature}
+
+The radial and Lebedev angular grids of CP2K's atom-centred quadrature\cite{CP2KMadeSimple2026} are varied independently at fixed regular-grid settings. The tabulated $\Delta N$ is the atom-grid density integral minus the prescribed eight-electron count, without density renormalization.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Self-consistent GPW water quadrature test at 800/60 Ry. Total-energy shifts are relative to 200/974 and are in kJ~mol$^{-1}$ of water molecules. Electron-integral errors refer to eight explicit electrons.}
+\label{tab:water-quadrature}
+\begin{tabular}{rrrr}
+\toprule
+Radial & Angular & $\Delta E$/kJ~mol$^{-1}$ & $\Delta N/e$\\
+\midrule
+50 & 50 & -0.969337 & +4.486e-04 \\
+50 & 100 & +0.624157 & -4.318e-05 \\
+50 & 194 & +0.692507 & -8.268e-06 \\
+50 & 302 & +0.807142 & -1.074e-06 \\
+50 & 434 & +0.644164 & -1.215e-07 \\
+100 & 50 & -1.555769 & +4.491e-04 \\
+100 & 100 & -0.028195 & -4.333e-05 \\
+100 & 302 & +0.189414 & -8.919e-07 \\
+100 & 434 & +0.021999 & -3.031e-07 \\
+100 & 590 & +0.015974 & -2.206e-07 \\
+150 & 434 & +0.033152 & -1.352e-07 \\
+150 & 590 & +0.026630 & -2.079e-07 \\
+150 & 770 & +0.037894 & -1.869e-07 \\
+200 & 590 & +0.029718 & -2.275e-07 \\
+200 & 770 & +0.041541 & -1.715e-07 \\
+200 & 974 & +0.000000 & -1.347e-07 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{Crystal basis, quadrature, k-point and device controls}
+\label{sec:crystal-numerical-controls}
+
+The underlying crystal geometries and electronic protocols are specified in Sec.~\ref{sec:crystal-protocol}. The CPU/CUDA labels distinguish model evaluation on the processor from evaluation on the accelerator through CUDA.
+
+\label{sec:urea-basis}
+\label{sec:crystal-basis}
+Each basis comparison changes the basis for both the crystal and its isolated-molecule reference. The geometries, AE Hamiltonian, one-centre reconstruction, dispersion parameters, 800/60~Ry cutoffs, 200/974 quadrature, k-point reduction, and SCF threshold are held fixed. A separate urea comparison tests quadrature refinement with the TZVPP-ae basis. No geometry relaxation or reference-energy adjustment is involved. The three reported AE lattice energies use the QZVPP-ae basis, while the TZVPP-ae calculations quantify basis sensitivity.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{AE basis-set and integration-grid convergence tests. All energies are in kJ~mol$^{-1}$. The molar entity is the complete simulation cell for $E_{\rm crystal}$ and one molecule for $E_{\rm molecule}$ and $E_{\rm latt}$. Both phases use the same basis and grid. The QZVPP-ae calculations supply all three AE entries in main-text Table~\ref{paper-tab:crystals}.}
+\label{tab:urea-basis}
+\begin{tabular}{lllrrr}
+\toprule
+System & Basis & Radial/Lebedev & $E_{\rm crystal}$ & $E_{\rm molecule}$ & $E_{\rm latt}$\\
+\midrule
+CO$_2$ & TZVPP-ae & 200/974 & -1980161.77517989 & -495004.06742925 & -36.376366\\
+CO$_2$ & QZVPP-ae & 200/974 & -1980775.68709177 & -495161.85483327 & -32.066940\\
+NH$_3$ & TZVPP-ae & 200/974 & -594122.53140653 & -148491.88940781 & -38.743444\\
+NH$_3$ & QZVPP-ae & 200/974 & -594188.48303155 & -148508.93620722 & -38.184551\\
+Urea & TZVPP-ae & 150/770 & -1183023.65071038 & -591387.18779811 & -124.637557\\
+Urea & TZVPP-ae & 200/974 & -1183024.03007136 & -591387.17216083 & -124.842875\\
+Urea & QZVPP-ae & 200/974 & -1183215.53006767 & -591497.33756697 & -110.427467\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For urea with the TZVPP-ae basis, refining the quadrature for both crystal and isolated molecule from 150/770 to 200/974 shifts the lattice energy from $-124.637557$ to $-124.842875$~kJ~mol$^{-1}$, a change of $-0.205318$~kJ~mol$^{-1}$. Enlarging the basis in both phases to QZVPP-ae at fixed 200/974 gives $-110.427467$~kJ~mol$^{-1}$, a change of $+14.415408$~kJ~mol$^{-1}$. The same basis enlargement changes CO$_2$ from $-36.376366$ to $-32.066940$~kJ~mol$^{-1}$ and NH$_3$ from $-38.743444$ to $-38.184551$~kJ~mol$^{-1}$, with shifts of $+4.309426$ and $+0.558893$~kJ~mol$^{-1}$. Table~\ref{tab:crystal-basis-errors} gives the corresponding DMC errors and basis shifts.
+
+\label{sec:crystal-basis-errors}
+\begin{table}[htbp]
+\centering\small
+\caption{Signed lattice-energy errors and basis shifts for the AE crystal and isolated-molecule calculations using the same 200/974 quadrature in Table~\ref{tab:urea-basis}, in kJ~mol$^{-1}$. DMC references are from Ref.~\citenum{DellaPia2024X23}. Negative reference errors indicate stronger binding. The MAEs use the same three crystals and unrounded energies at both basis levels.}
+\label{tab:crystal-basis-errors}
+\begin{tabular}{lrrr}
+\toprule
+Crystal & TZVPP-ae--DMC & QZVPP-ae--DMC & QZVPP-ae--TZVPP-ae\\
+\midrule
+CO$_2$ & -6.976 & -2.667 & +4.309\\
+NH$_3$ & -0.543 & +0.015 & +0.559\\
+Urea & -16.343 & -1.927 & +14.415\\
+\midrule
+MAE & 7.954 & 1.537 & --\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\FloatBarrier
+
+
+\begin{table}[htbp]
+\centering
+\caption{Numerical sensitivities in kJ\,mol$^{-1}$ per molecule. All unlisted scientific settings are held fixed. The atom-grid refinement uses energies of both the crystal and its isolated-molecule reference.}
+\label{tab:x23_controls_si}
+\begin{tabular}{@{}p{0.27\textwidth}p{0.29\textwidth}p{0.25\textwidth}r@{}}
+\toprule
+System and representation & Change & Observable & Shift \\
+\midrule
+CO$_2$, GAPW-XC/GTH & 150/770 to 200/974 & $\Delta E_{\rm latt}$, both phases & $+0.044554$ \\
+CO$_2$, GAPW-XC/GTH & 800 to 1200 Ry & $\Delta(E_{\rm crystal}/Z)$ only & $-0.015499$ \\
+CO$_2$, GAPW-XC/GTH & $3^3$ to $5^3$ & $\Delta E_{\rm latt}$ & $+0.000391$ \\
+NH$_3$, GAPW-XC/GTH & Symmetry tolerance $10^{-6}$ to $10^{-4}$ & $\Delta E_{\rm latt}$ & $-0.000429$ \\
+CO$_2$, GAPW-XC/GTH & CPU minus CUDA & $\Delta E_{\rm latt}$ & $-0.000127$ \\
+Urea, \GAPW{}-AE & CPU minus CUDA & $\Delta E_{\rm latt}$ & $-0.000379$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Refining the quadrature for both the CO$_2$ crystal and isolated molecule from 150/770 to 200/974 changes $E_{\rm crystal}/Z$ by $-0.110687$ and $E_{\rm molecule}$ by $-0.155241$~kJ~mol$^{-1}$. Their difference, $+0.044554$~kJ~mol$^{-1}$, measures the lattice-energy sensitivity. The $5^3$ crystal check uses 11 irreducible points out of 125, compared with four out of 27 at $3^3$. In the k-point, symmetry-tolerance, and device checks, the molecular reference is unchanged, so the crystal-energy shift per molecule equals the lattice-energy shift.
+
+The 1200~Ry cutoff control concerns only the CO$_2$ crystal energy. No lattice-energy shift is reported because the separate gas-phase control lacks a complete runtime-provenance record. CO$_2$ CPU/CUDA and urea-AE CPU/CUDA controls use the same executable and computational settings within each comparison, changing only the device used for model evaluation. The device shifts are below 0.001~kJ~mol$^{-1}$ for these fixed inputs.
+
+\FloatBarrier
+
+\section{Selected molecular reaction comparison}
 \label{sec:molecular-data}
 
-The common set contains 70 reactions from 36 parent subsets of dietGMTKN55.\cite{Gould2018,Goerigk2017} Each reaction has complete accepted species energies in every compared protocol. The remaining cases required longer SCF convergence. The final common set is fixed across methods. No additional reaction is removed on the basis of its reference error. The reaction index and source records in the repository define the selection explicitly.
+The comparison uses an identical set of 62 reactions from dietGMTKN55 for six protocols, namely GauXC GPW/GTH, GauXC GAPW-AE, PySCF, native GAPW-XC/GTH, native GAPW-AE with the TZVPP-ae basis, and native GAPW-AE with the QZVPP-ae basis.\cite{Gould2018,Goerigk2017,Poeschel2026MolecularSkala,Battaglia2026DietData} PySCF supplies independent all-electron Skala results with the def2-TZVP/ma-def2-TZVP basis protocol of GauXC GAPW-AE. The benchmark reference energies are the official dietGMTKN55 values, not the PySCF Skala results. The native AE calculations cover 140 distinct species.
 
-The same D3 contribution is used in the native reaction comparison. Signed errors are calculation minus the official reference, and MAEs are unweighted averages over the fixed common set. They are not full-100 dietGMTKN55 statistics or type-2 weighted total mean absolute deviations (WTMAD-2). The ozone-containing W4-11/138 reaction remains included, despite its large GTH error. It contributes 58.8\% of the all-GTH squared error. Removing it would lower the 69-reaction GAPW-XC MAE to 2.563~kcal~mol$^{-1}$. This is an influence diagnostic, not the headline result. The direct/one-centre mixed comparison shares all light-element AE energies, and only one retained reaction changes by more than $10^{-9}$~kcal~mol$^{-1}$.
 
-\input{molecular-reactions}
+The native molecular production calculations use plane-wave/relative cutoffs of 640/60~Ry for GAPW-AE and 400/60~Ry for GAPW-XC/GTH. The AE calculations use the TZVPP-ae and QZVPP-ae bases, whereas GAPW-XC/GTH uses the TZV2P-GTH basis. Both AE and GTH calculations use 100 radial points and the 434-point Lebedev rule. The production OT and diagonalization residual thresholds are $5\times10^{-7}$ and $5\times10^{-6}$, respectively.
 
-\subsection{Direct comparison with the previous molecular implementation}
+
+\subsection{Cross-protocol statistics}
 \label{sec:cross-code}
 
-All PySCF/Skala reference values use Becke partitioning without an atomic-radius adjustment.
+Reactions are matched across datasets by molecular geometry, charge, multiplicity, and signed stoichiometric coefficients. The AE comparison is restricted to reactions whose constituent species are treated entirely all-electron, without mixed AE/GTH or PP substitutions. All selected CP2K AE inputs use \texttt{POTENTIAL ALL}. The two pure-GTH protocols use the same 62 reactions. The native AE calculations use the TZVPP-ae and QZVPP-ae bases with the intrinsic GAPW one-centre reconstruction.
 
-The source is the reaction-resolved collaborator dataset archived with the earlier molecular GauXC study, at repository revision \texttt{25e80ba}.\cite{Poeschel2026MolecularSkala,Battaglia2026DietData} Each native reaction is matched by its species geometries after translation, charge, multiplicity, and signed stoichiometric coefficients. Official references and weights are checked independently. All 70 retained reactions have complete GauXC AE/ECP and PySCF energies. Converged GauXC GPW-GTH energies cover 65 of them. Source reaction numbers differ from the native benchmark identifiers, and the deposited mapping resolves those aliases explicitly.
-
-The comparisons are separated by core treatment. Native GAPW-XC/GTH is compared with GauXC GPW-GTH on the 65-reaction intersection. The mixed native AE/GTH protocols are compared with GauXC AE/def2-ECP and PySCF on the full 70-reaction common set. The earlier AE/ECP calculations use def2-TZVP/ma-def2-TZVP bases, with def2 ECPs for the heavier elements, rather than the native UZH basis/core protocol specified in Sec.~\ref{sec:molecular-basis}. This is the principal protocol distinction: the finite Gaussian space changes and, where ECPs differ, so does the core Hamiltonian. The remaining reaction-energy differences are consistent with these basis/core and numerical integration choices. The earlier GPW-GTH calculations instead use a SCAN-optimized basis/pseudopotential combination, whereas the native GTH protocol uses its PBE-optimized counterpart. The comparison complements the numerical consistency tests in Secs.~\ref{sec:reconstruction} and \ref{sec:molecular-settings}, which validate the native implementation.
-
-The following tables abbreviate GauXC AE/def2-ECP as GauXC AE and GauXC GPW-GTH as GauXC GPW where space is limited. Mean absolute differences (MADs) refer to direct differences between calculated reaction energies, not differences of reference MAEs. Root-mean-square (RMS) errors and differences are reported separately.
-
-\input{molecular-interface-summary}
-
-On the 65-reaction pseudopotential intersection, native GAPW-XC/GTH and GauXC GPW-GTH have reference MAEs of 2.2193 and 2.1811~kcal~mol$^{-1}$. Their direct MAD is 0.4631~kcal~mol$^{-1}$, with signed mean $-0.2250$, RMS difference 0.7799, and maximum absolute difference 3.9442 for DC13/6. By contrast, on all 70 reactions the mixed native protocols have reference MAEs of 1.8905, compared with 1.2378 for GauXC AE/ECP and 1.2314 for PySCF. The Mixed D--GauXC AE/ECP MAD is 1.8889~kcal~mol$^{-1}$, with signed mean $+0.6494$ and median absolute difference 0.7151. The largest difference, $+18.6055$~kcal~mol$^{-1}$ for W4-11/138, remains included. No outlier is removed from either intersection.
-
-\input{molecular-interface-pairs}
-
-All headline comparisons retain the total energies as recorded, including each source's separately evaluated D3(BJ) correction. The source calculations use the B3LYP5 dispersion convention, but the recorded corrections are not numerically identical across every protocol. For native Mixed D versus GauXC AE/ECP, the D3 reaction-contribution differences have a MAD of only 0.001396~kcal~mol$^{-1}$ and a maximum of 0.014549. Removing each source's own correction changes the direct MAD from 1.8889 to 1.8880~kcal~mol$^{-1}$. Dispersion bookkeeping therefore does not explain the larger native--GauXC differences. For native GAPW-XC/GTH versus GauXC GPW-GTH, the corresponding MAD changes from 0.4631 to 0.4624. The latter reproduces the earlier comparison in which the same native D3 term was added to both electronic reaction energies.
-
-There is one non-negligible recorded GauXC AE/ECP--PySCF dispersion mismatch within the retained set: HEAVY28/5 differs by $+0.419041$~kcal~mol$^{-1}$ in its D3 reaction contribution. Its origin is not established, and neither source value is overwritten. Across the 70 reactions, the GauXC--PySCF direct MAD is 0.04560 for the recorded totals and 0.03999 for the electronic contributions alone. Their total-energy differences should therefore not all be attributed to quadrature. The comparison files preserve electronic, dispersion, and total energies separately, together with input/output hashes and the pinned source revision.
-
-\input{molecular-interface-reactions}
-
-For context, the prior GauXC manuscript's updated primary AE/ECP--PySCF comparison comprises all 100 reactions, not these 65 or 70.\cite{Poeschel2026MolecularSkala} The values in Table~\ref{tab:gauxc-context} are from that updated analysis and are consistent with the reaction-resolved source supplied on 11 September 2026. They supersede earlier draft aggregates and differ from the first arXiv version. They must not be compared with the native aggregates as though they used the same reaction population.
+GauXC GPW/GTH and native GAPW-XC/GTH use TZVP-GTH and TZV2P-GTH basis sets, respectively, both with GTH pseudopotentials. PySCF uses Becke partitioning without an atomic-radius adjustment. Total reaction energies retain each source's recorded D3(BJ) contribution.
 
 \begin{table}[htbp]
-\centering
-\caption{Context from the updated 100-reaction molecular GauXC manuscript. These aggregates are quoted for their original set, not rescored or compared as if they belonged to the native 70-reaction set. Energies are in kcal~mol$^{-1}$.}
-\label{tab:gauxc-context}
-\begin{tabular}{lrr}
+\centering\small
+\caption{Unweighted reference-error statistics for the identical selected 62 reactions, in kJ~mol$^{-1}$. ME is calculation minus reference. Med. and Max. denote absolute errors.}\label{tab:common62-summary}
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
-Metric & CP2K/GauXC AE/ECP & Microsoft PySCF\\
+Protocol & $N$ & ME & MAE & RMSE & Med. & Max. \\
 \midrule
-MAE against reference & 1.255 & 1.243\\
-WTMAD-2 & 3.486 & 3.459\\
-\bottomrule
-\end{tabular}
-\par\smallskip
-Direct cross-code MAD: 0.058; signed-error $R^2$: 0.998; all absolute cross-code residuals below 0.5.
-\end{table}
-
-The difference of the 100-reaction aggregate MAEs, 0.012~kcal~mol$^{-1}$, is not the direct cross-code MAD of 0.058~kcal~mol$^{-1}$. Nor can either quantify native/GauXC equivalence under a changed basis and core treatment. Tables~\ref{tab:interface-summary}--\ref{tab:interface-reactions} instead provide the explicit common-set comparison directly from the deposited species energies.
-\FloatBarrier
-
-\section{K-Point and Symmetry Checks}
-\label{sec:symmetry}
-
-Symmetry reduction is a change in the quadrature representation of a fixed Brillouin-zone integral. Correct weights, rotations of orbital components, and Bloch-phase conventions are required. For FD forces, the perturbed geometry may have lower symmetry than the reference geometry. Consistent unreduced sampling or correctly regenerated symmetry is needed. Inversion/time-reversal reduction and full point-group reduction are not interchangeable validation labels.
-
-Seven archived controls compare complete and reduced $4^3$ meshes for C and MgO at unchanged geometry and scientific input. The full point-group reduction uses 10 irreducible points from 64, at symmetry tolerance $10^{-8}$. Table~\ref{tab:symmetry} lists the absolute energy difference per reported cell. These controls establish agreement for their specific geometries, meshes, and executables. They are not a proof for all future restarts or all symmetry operations.
-
-\begin{table}[htbp]
-\centering
-\caption{Selected full/reduced-grid energy checks. Residuals are the final printed SCF values. $|\Delta E|$ is in kJ~mol$^{-1}$ of simulation cells.}
-\label{tab:symmetry}
-\begin{tabular}{llrrr}
-\toprule
-System & Representation & Full SCF residual & Reduced SCF residual & $|\Delta E|$\\
-\midrule
-C & GAPW-XC/GTH & $3.0\times10^{-7}$ & $2.1\times10^{-7}$ & 0.0200\\
-C & GAPW-AE & $8.0\times10^{-8}$ & $9.0\times10^{-8}$ & 0.0229\\
-C & Mixed direct (AE here) & $8.0\times10^{-8}$ & $9.0\times10^{-8}$ & 0.0229\\
-C & Mixed one centre (AE here) & $8.0\times10^{-8}$ & $9.0\times10^{-8}$ & 0.0229\\
-MgO & GAPW-XC/GTH & $4.7\times10^{-7}$ & $3.6\times10^{-7}$ & 0.0291\\
-MgO & Mixed direct & $2.7\times10^{-7}$ & $4.9\times10^{-7}$ & 0.0493\\
-MgO & Mixed one centre & $1.4\times10^{-7}$ & $9.0\times10^{-8}$ & 0.0378\\
+GauXC GPW/GTH & 62 & 0.628 & 4.978 & 9.619 & 2.452 & 60.435 \\
+GauXC GAPW-AE (def2) & 62 & 1.199 & 4.053 & 9.938 & 1.162 & 62.372 \\
+PySCF (def2) & 62 & 1.228 & 4.022 & 9.919 & 1.232 & 62.595 \\
+Native GAPW-XC/GTH & 62 & -0.297 & 5.073 & 10.117 & 2.066 & 60.567 \\
+GAPW-AE TZVPP-ae & 62 & 2.186 & 7.136 & 14.718 & 2.176 & 85.564 \\
+GAPW-AE QZVPP-ae & 62 & 0.294 & 4.291 & 11.189 & 1.225 & 74.937 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The C inputs of both mixed protocols use an AE carbon basis and potential, so those rows do not constitute additional GTH validations. Mixed MgO uses GTH Mg and AE O. The molecular-crystal production uses full point-group reduction of $3^3$ meshes. The independently reported CO$_2$ $5^3$ and NH$_3$ tolerance checks below constrain sampling and approximate-symmetry sensitivity for those cases. They should not be relabelled as full-versus-reduced tests.
+
+The def2-based GauXC protocol gives a lower molecular MAE than native TZVPP-ae (4.053 versus 7.136~kJ~mol$^{-1}$), while QZVPP-ae reaches 4.291~kJ~mol$^{-1}$.  The cross-implementation comparison includes differences in both orbital bases and numerical protocols.
+
+Table~\ref{tab:common62-summary} reports unweighted errors against the official references, whereas Table~\ref{tab:common62-pairs} compares calculated reaction energies directly. Both tables use the same 62 reactions, whose individual energies are listed in Tables~\ref{tab:common62-native} and \ref{tab:common62-external}.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Differences between calculated reaction energies for the same 62 reactions, in kJ~mol$^{-1}$. Signed differences are first protocol minus second. MAD is the mean absolute difference between predictions, not the difference of their reference MAEs.}\label{tab:common62-pairs}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Pair & MD & MAD & RMSD & Max. \\
+\midrule
+Native GAPW-XC/GTH / GauXC GPW/GTH & -0.9247 & 1.9256 & 3.2918 & 16.5027 \\
+TZVPP-ae / GauXC AE & 0.9870 & 5.7365 & 9.2836 & 34.8850 \\
+QZVPP-ae / GauXC AE & -0.9051 & 3.5369 & 5.6717 & 23.1561 \\
+GauXC AE / PySCF & -0.0290 & 0.1561 & 0.2293 & 0.8604 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+% Generated by build-common62-basis-figure.py from the unchanged common62 data.
+\paragraph{Reaction-resolved basis-protocol comparison.}
+Figure~\ref{fig:common62-basis-improvements} shows how the basis change affects each reaction. Relative to TZVPP-ae, the selected QZVPP-ae protocol reduces the absolute benchmark error for 42 of the same 62 reactions and the absolute difference from GauXC-AE for 43. Positive values denote improvement and negative values deterioration.
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{common62-basis-figure.pdf}
+\caption{Reaction-wise reduction in absolute energy deviations upon changing from the TZVPP-ae to the QZVPP-ae protocol, in kJ~mol$^{-1}$. Each bar is $|E_{\rm TZ}-E_c|-|E_{\rm QZ}-E_c|$, using (a) the benchmark reference or (b) GauXC-AE as $E_c$. All 62 reactions are retained in the same order in both panels. Positive values indicate smaller absolute deviations with the QZVPP-ae basis.}
+\label{fig:common62-basis-improvements}
+\end{figure}
+
+\FloatBarrier
+{\small
+\begin{longtable}{@{}lrrrr@{}}
+\caption{Native reaction energies on the selected 62-reaction population, in kJ~mol$^{-1}$. All three native columns use bases from the UZH protocol.}\label{tab:common62-native}\\
+\toprule
+Reaction & Reference & GAPW-XC/GTH & GAPW-AE TZVPP-ae & GAPW-AE QZVPP-ae \\
+\midrule
+\endfirsthead
+\toprule
+Reaction & Reference & GAPW-XC/GTH & GAPW-AE TZVPP-ae & GAPW-AE QZVPP-ae \\
+\midrule
+\endhead
+ACONF/2 & 2.56898 & 1.28293 & 2.85392 & 2.75568 \\
+ACONF/5 & 2.48948 & 1.28689 & 2.45855 & 2.37104 \\
+ACONF/8 & 4.92875 & 3.24638 & 5.11082 & 4.91425 \\
+ADIM6/2 & 8.32616 & 11.41051 & 8.73566 & 9.70990 \\
+AHB21/1 & -74.43336 & -92.83256 & -84.91928 & -82.25243 \\
+AHB21/15 & -36.06608 & -48.50487 & -45.43956 & -40.11376 \\
+Amino20x4/23 & 16.92428 & 15.43391 & 18.51236 & 16.11820 \\
+Amino20x4/48 & 2.25936 & 1.15608 & 3.76777 & 2.47856 \\
+Amino20x4/56 & 7.90358 & 8.09511 & 6.61567 & 7.72434 \\
+BH76/6 & 74.47520 & 77.67614 & 74.74278 & 62.24167 \\
+BH76RC/16 & 56.06560 & 45.57741 & 56.89353 & 60.33513 \\
+BHPERI/1 & 147.69520 & 138.48789 & 164.22260 & 158.31086 \\
+BHPERI/17 & 54.81040 & 45.25603 & 53.14221 & 52.96022 \\
+BHPERI/23 & 116.31520 & 118.37341 & 110.77424 & 111.85745 \\
+BHPERI/26 & 130.95920 & 131.38155 & 129.10353 & 127.47588 \\
+BHROT27/1 & 11.42232 & 11.25676 & 11.86788 & 11.70391 \\
+BHROT27/10 & 33.59752 & 35.31119 & 33.50158 & 33.90998 \\
+BSR36/4 & 37.02840 & 35.31439 & 36.88456 & 38.02976 \\
+BSR36/21 & 40.91952 & 34.89813 & 36.91690 & 38.44930 \\
+BUT14DIOL/28 & 11.84072 & 11.29605 & 18.12852 & 11.65094 \\
+BUT14DIOL/39 & 12.97040 & 13.02505 & 20.65342 & 13.02767 \\
+BUT14DIOL/63 & 18.03304 & 17.14302 & 24.98665 & 17.83065 \\
+CARBHB12/3 & 10.12946 & 11.28306 & 15.43051 & 10.87901 \\
+CARBHB12/4 & 41.70193 & 41.73249 & 65.17513 & 41.58577 \\
+CARBHB12/6 & 12.63986 & 12.34947 & 21.62676 & 11.37060 \\
+CARBHB12/11 & 13.56034 & 16.42084 & 12.83593 & 15.83114 \\
+CDIE20/2 & 18.40960 & 18.76933 & 20.91587 & 17.68792 \\
+CHB6/1 & -144.05512 & -140.14019 & -143.03939 & -146.28856 \\
+DC13/6 & -107.52880 & -134.02158 & -133.12497 & -124.88266 \\
+DC13/12 & -245.60080 & -254.11771 & -280.98026 & -277.32449 \\
+FH51/25 & -84.80968 & -90.48925 & -81.25774 & -86.72877 \\
+G21EA/25 & 228.86480 & 213.17958 & 216.42552 & 230.02100 \\
+G21IP/28 & 1019.67846 & 1003.55055 & 1020.42489 & 1022.85608 \\
+G2RC/15 & -164.97512 & -168.08539 & -185.80314 & -174.07423 \\
+HAL59/21 & 44.09936 & 50.65662 & 41.41951 & 42.23443 \\
+ICONF/16 & 15.31344 & 17.05636 & 16.71153 & 16.12487 \\
+IL16/3 & -489.15144 & -488.05716 & -501.85762 & -496.76800 \\
+INV24/12 & 43.09520 & 46.39913 & 45.14792 & 47.26331 \\
+INV24/19 & 25.94080 & 22.85371 & 25.54711 & 27.04270 \\
+INV24/22 & 113.80480 & 114.44733 & 116.10448 & 115.81283 \\
+ISO34/12 & 190.99960 & 201.39732 & 191.87815 & 184.85119 \\
+ISOL24/13 & 138.15568 & 144.24655 & 144.97646 & 143.43009 \\
+MCONF/7 & 12.21728 & 13.01917 & 10.94049 & 9.89263 \\
+MCONF/22 & 22.21704 & 24.39856 & 19.82921 & 19.51291 \\
+MCONF/30 & 20.33424 & 21.05847 & 21.62233 & 20.77903 \\
+MCONF/42 & 30.62688 & 34.15212 & 30.69798 & 31.08516 \\
+PArel/3 & 12.30096 & 12.14477 & 12.79273 & 11.70525 \\
+PArel/5 & 30.08296 & 36.32561 & 32.42660 & 30.58488 \\
+PArel/10 & 12.46832 & 11.04971 & 12.22813 & 13.14477 \\
+PArel/20 & 8.99560 & 4.92488 & 4.69537 & 10.07264 \\
+PNICO23/13 & 16.65232 & 17.44648 & 18.67000 & 17.43350 \\
+PNICO23/17 & 29.70640 & 30.95232 & 30.60810 & 29.37639 \\
+RG18/1 & 0.33472 & 0.73170 & 0.56026 & 0.54270 \\
+RG18/15 & 1.00416 & 2.03319 & 1.18541 & 1.22589 \\
+S66/17 & 71.88112 & 73.95584 & 80.23490 & 73.06240 \\
+S66/24 & 11.79888 & 14.67413 & 14.49762 & 14.05858 \\
+S66/45 & 7.32200 & 10.83949 & 8.51788 & 8.35847 \\
+SCONF/10 & 23.63960 & 25.50964 & 36.29186 & 23.96906 \\
+SIE4x4/7 & 130.95920 & 191.52574 & 216.52327 & 205.89603 \\
+WATER27/17 & 320.07600 & 319.35748 & 346.31542 & 323.48213 \\
+WATER27/20 & 111.29440 & 122.63740 & 141.26870 & 122.09978 \\
+YBDE18/1 & 239.19928 & 234.27792 & 251.97581 & 243.94847 \\
+\bottomrule
+\end{longtable}
+}
+
+{\small
+\begin{longtable}{@{}lrrrr@{}}
+\caption{Reaction-matched earlier implementation results, in kJ~mol$^{-1}$. GauXC GAPW-AE and PySCF use def2-TZVP/ma-def2-TZVP. GauXC GPW/GTH uses a TZVP-GTH basis with GTH pseudopotentials.}\label{tab:common62-external}\\
+\toprule
+Reaction & Reference & GauXC GPW/GTH & GauXC GAPW-AE & PySCF \\
+\midrule
+\endfirsthead
+\toprule
+Reaction & Reference & GauXC GPW/GTH & GauXC GAPW-AE & PySCF \\
+\midrule
+\endhead
+ACONF/2 & 2.56898 & 1.51614 & 2.70488 & 2.88013 \\
+ACONF/5 & 2.48948 & 1.33251 & 2.31403 & 2.20157 \\
+ACONF/8 & 4.92875 & 3.25761 & 4.97115 & 4.81762 \\
+ADIM6/2 & 8.32616 & 9.64238 & 7.74811 & 7.78158 \\
+AHB21/1 & -74.43336 & -85.57961 & -72.79691 & -72.84224 \\
+AHB21/15 & -36.06608 & -49.03304 & -36.79594 & -36.79087 \\
+Amino20x4/23 & 16.92428 & 16.12294 & 15.52796 & 15.19663 \\
+Amino20x4/48 & 2.25936 & 0.06588 & 2.51502 & 2.59257 \\
+Amino20x4/56 & 7.90358 & 9.21476 & 8.53384 & 8.52032 \\
+BH76/6 & 74.47520 & 79.98774 & 71.26673 & 71.76480 \\
+BH76RC/16 & 56.06560 & 46.01286 & 59.67556 & 59.63146 \\
+BHPERI/1 & 147.69520 & 143.26150 & 150.76083 & 150.95388 \\
+BHPERI/17 & 54.81040 & 46.99134 & 54.38787 & 54.58550 \\
+BHPERI/23 & 116.31520 & 118.89065 & 120.21677 & 120.49353 \\
+BHPERI/26 & 130.95920 & 131.42996 & 132.04449 & 131.55239 \\
+BHROT27/1 & 11.42232 & 11.84167 & 12.08683 & 12.10046 \\
+BHROT27/10 & 33.59752 & 35.28863 & 34.84088 & 34.84112 \\
+BSR36/4 & 37.02840 & 36.55882 & 34.10942 & 34.50168 \\
+BSR36/21 & 40.91952 & 38.26966 & 33.46107 & 33.91601 \\
+BUT14DIOL/28 & 11.84072 & 11.58231 & 12.36028 & 12.40093 \\
+BUT14DIOL/39 & 12.97040 & 13.96245 & 15.16832 & 15.29769 \\
+BUT14DIOL/63 & 18.03304 & 17.10798 & 18.76202 & 18.93717 \\
+CARBHB12/3 & 10.12946 & 11.04613 & 10.68443 & 10.71231 \\
+CARBHB12/4 & 41.70193 & 40.94177 & 43.46225 & 43.38295 \\
+CARBHB12/6 & 12.63986 & 11.73896 & 9.91294 & 9.98562 \\
+CARBHB12/11 & 13.56034 & 16.60086 & 14.19033 & 14.20384 \\
+CDIE20/2 & 18.40960 & 18.93252 & 18.25009 & 18.28335 \\
+CHB6/1 & -144.05512 & -134.14649 & -149.42828 & -149.48289 \\
+DC13/6 & -107.52880 & -117.51884 & -133.99236 & -133.92558 \\
+DC13/12 & -245.60080 & -259.56879 & -266.96065 & -266.10027 \\
+FH51/25 & -84.80968 & -93.44890 & -88.45286 & -88.22484 \\
+G21EA/25 & 228.86480 & 219.25079 & 237.07577 & 237.13020 \\
+G21IP/28 & 1019.67846 & 1007.98305 & 1029.70514 & 1029.54667 \\
+G2RC/15 & -164.97512 & -169.82124 & -150.91810 & -150.30841 \\
+HAL59/21 & 44.09936 & 55.06964 & 42.59528 & 42.79198 \\
+ICONF/16 & 15.31344 & 17.63662 & 16.38845 & 16.31562 \\
+IL16/3 & -489.15144 & -485.93003 & -490.25729 & -490.64283 \\
+INV24/12 & 43.09520 & 47.26901 & 43.63130 & 43.54607 \\
+INV24/19 & 25.94080 & 25.76599 & 24.70678 & 24.73612 \\
+INV24/22 & 113.80480 & 120.14363 & 113.10491 & 113.07369 \\
+ISO34/12 & 190.99960 & 201.37424 & 187.49399 & 187.57034 \\
+ISOL24/13 & 138.15568 & 142.88587 & 137.32918 & 137.05090 \\
+MCONF/7 & 12.21728 & 14.25003 & 11.55123 & 11.53186 \\
+MCONF/22 & 22.21704 & 25.05707 & 23.86352 & 23.67805 \\
+MCONF/30 & 20.33424 & 21.03547 & 21.36303 & 21.23174 \\
+MCONF/42 & 30.62688 & 33.82632 & 32.91529 & 32.83780 \\
+PArel/3 & 12.30096 & 12.72470 & 12.44000 & 12.36893 \\
+PArel/5 & 30.08296 & 37.95524 & 30.80324 & 30.77193 \\
+PArel/10 & 12.46832 & 11.99059 & 14.03181 & 14.05480 \\
+PArel/20 & 8.99560 & 6.52513 & 8.15940 & 8.46593 \\
+PNICO23/13 & 16.65232 & 17.75198 & 19.13084 & 19.14686 \\
+PNICO23/17 & 29.70640 & 31.38574 & 30.77153 & 30.92739 \\
+RG18/1 & 0.33472 & 0.52885 & 0.56835 & 0.55532 \\
+RG18/15 & 1.00416 & 1.43598 & 2.03724 & 2.05571 \\
+S66/17 & 71.88112 & 69.41181 & 71.62485 & 71.58316 \\
+S66/24 & 11.79888 & 12.19253 & 12.66511 & 12.61697 \\
+S66/45 & 7.32200 & 10.41703 & 7.92550 & 7.98980 \\
+SCONF/10 & 23.63960 & 26.07484 & 26.03616 & 25.93164 \\
+SIE4x4/7 & 130.95920 & 191.39455 & 193.33166 & 193.55436 \\
+WATER27/17 & 320.07600 & 319.44002 & 340.81766 & 340.55184 \\
+WATER27/20 & 111.29440 & 127.42934 & 110.07609 & 109.82968 \\
+YBDE18/1 & 239.19928 & 228.59282 & 246.26064 & 245.89214 \\
+\bottomrule
+\end{longtable}
+}
+
+
 \FloatBarrier
 
-\input{x23-analysis-si}
-\FloatBarrier
-\input{ice-basis-si}
-\FloatBarrier
-\input{periodic-analysis-si}
+\section{Molecular-crystal lattice energies}
+\label{sec:x23_si}
+
+\subsection{Molecular-crystal geometries and electronic protocol}
+\label{sec:crystal-protocol}
+
+% Geometry source: supporting dataset arXiv:2402.13059v1, Sec. 5.6.
+The crystal and gas-phase geometries are taken from the supporting information of Della Pia \emph{et al.}\cite{DellaPia2024X23} Crystal coordinates are wrapped into the supplied cells without relaxation or symmetrization. CO$_2$ and NH$_3$ have cubic cells with $a=5.624$ and 5.1305~\AA{} and four molecules each. Urea has a tetragonal cell with $a=b=5.565$, $c=4.684$~\AA{}, and two molecules. The separately supplied gas molecules are rigidly translated into centred cells whose dimensions are the molecular extents plus 25~\AA{}. They use nonperiodic boundary conditions for both the cell and electrostatics, together with the analytic isolated-system Poisson solver.
+
+All four representations use Skala-1.1 Rev1 on a smoothly partitioned atom-composite quadrature and five multigrids with cutoffs of 800/60~Ry for both crystal and molecule. The reported AE energies for all three crystals and their isolated-molecule references use the QZVPP-ae basis with explicit nuclei, 200 radial points, and the 974-point Lebedev rule. GTH calculations use TZV2P-GTH bases, GTH potentials, 150 radial points, and the 770-point Lebedev rule. The TZVPP-ae calculations and the coarser 150/770 AE quadrature provide numerical controls. Matched TZVPP-ae/QZVPP-ae basis comparisons use 200/974 throughout (Sec.~\ref{sec:crystal-basis}).
+
+The augmented representations employ the small extended expansion and accurate augmented-XC integration.\cite{CP2K2020} GAPW-AE and GAPW-XC/GTH each retain their intrinsic reconstruction and are not subdivided into direct and one-centre variants. Only the two ordinary GAPW-GTH representations compare direct and one-centre reconstructed valence fields at fixed Hamiltonian and basis. All required hard-minus-soft fields are assembled before the joint model evaluation.
+
+D3(BJ) is included, with $s_6=1$, $s_8=1.9889$, $a_1=0.3981$, $a_2=4.4211$, and the CP2K input parameter \texttt{R\_CUTOFF} set to 20~\AA{}.\cite{Grimme2011D3BJ} The factors $s_6$ and $s_8$ scale the sixth- and eighth-order pair-dispersion terms, while $a_1$ and $a_2$ set the Becke--Johnson damping. The B3LYP parameter alias selects these damping constants, not the electronic functional. All systems are neutral restricted singlets. The OT threshold is $5\times10^{-7}$. No density renormalization, energy alignment, or fitting to the reference lattice energies is applied.
+
+Every crystal uses a $\Gamma$-centred $3^3$ mesh with full point-group reduction through spglib.\cite{Togo2024Spglib} With symmetry tolerance $10^{-6}$, the AE controls with the TZVPP-ae basis and 150/770 quadrature and GAPW-XC give 4, 10, and 10 irreducible points for CO$_2$, NH$_3$, and urea. The matched fine-grid CO$_2$ and NH$_3$ AE basis controls use $10^{-4}$ and four irreducible points in both bases, while urea retains ten. The GTH-direct and GTH-1C calculations use $10^{-4}$ and give 4, 4, and 6. These finite tolerances recognize near-symmetries in the decimal coordinates without moving the atoms. Their numerical sensitivity is distinct from a full-versus-reduced-grid comparison.
+
+The electronic diffusion Monte Carlo (DMC) references have statistical uncertainties of 0.2, 0.1, and 0.3~kJ~mol$^{-1}$ for CO$_2$, NH$_3$, and urea. The estimated overall uncertainty is about 2~kJ~mol$^{-1}$ and exceeds these statistical error bars.\cite{DellaPia2024X23} Thermal and zero-point corrections to experimental sublimation enthalpies are not added to the DMC energies.
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Comparison with other electronic-structure methods}
+\label{sec:crystal-literature}
+
+Table~\ref{tab:x23-dft-context} compares the native results with the DMC references and published density-functional electronic lattice energies collected by Della Pia \emph{et al.}\cite{DellaPia2024X23,DellaPia2025MLIP} Their plane-wave calculations use hard projector augmented-wave (PAW) datasets, a 1000~eV cutoff, and dense system-specific k-point meshes. The PBE0+MBD values use FHI-aims. The MAE is the unweighted mean of $|E_{\rm latt}-E_{\rm latt}^{\rm DMC}|$ over CO$_2$, NH$_3$, and urea, using unrounded native energies and the reported literature values.
+
+
+The periodic MP2 and SCS(MI)-MP2 values of Liang \emph{et al.}\cite{Liang2023CrystalMP2} use frozen-core correlation, cc-pVTZ/cc-pVQZ extrapolation to the complete-basis-set (CBS) limit, and extrapolated Brillouin-zone sampling. Their counterpoise-corrected cohesive energies include gas-phase monomer relaxation. We reverse the signs of their positive dissociation energies to express lattice energies as negative values. These calculations use PBE-TS-optimized X23 geometries, rather than the Della Pia geometries used here.
+
+The multi-level calculation of Syty \emph{et al.}\cite{Syty2025CrystalCC} combines LNO-CCSD(T) for monomer relaxation and short-range dimers with RPA+ph for distant dimers and trimers and a periodic Hartree--Fock correction. Monomer and dimer energies use aug-cc-pVTZ/aug-cc-pVQZ extrapolation, while trimers use aug-cc-pVTZ. The geometries are taken from Della Pia \emph{et al.} without reoptimization. The tabulated total electronic lattice energies come from this composite method rather than a uniform periodic CCSD(T) treatment.
+
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Electronic lattice energies and three-crystal MAEs, all in kJ~mol$^{-1}$. DMC references are from Ref.~\citenum{DellaPia2024X23}, with statistical uncertainties in parentheses. Native Skala--D3(BJ) values are from main-text Table~\ref{paper-tab:crystals}. Other density-functional values are transcribed from Tables S5, S8, and S22 of Ref.~\citenum{DellaPia2025MLIP}. Each dispersion model is part of the stated method. MP2 and SCS(MI)-MP2 values are from Table S2 of Ref.~\citenum{Liang2023CrystalMP2}, with reversed signs. Multi-level CCSD(T) denotes the LNO-CCSD(T)/RPA+ph/HF method from Table S5 of Ref.~\citenum{Syty2025CrystalCC}. MAEs summarize these three crystals.}
+\label{tab:x23-dft-context}
+\begin{tabular}{lrrrr}
+\toprule
+Method & CO$_2$ & NH$_3$ & Urea & MAE\\
+\midrule
+DMC reference & -29.4(2) & -38.2(1) & -108.5(3) & --\\
+\midrule
+Skala--D3(BJ), GAPW-XC/GTH & -37.41 & -40.07 & -113.73 & 5.04\\
+Skala--D3(BJ), GAPW-AE & -32.07 & -38.18 & -110.43 & 1.54\\
+Skala--D3(BJ), GAPW-GTH direct & -37.38 & -40.09 & -113.80 & 5.06\\
+Skala--D3(BJ), GAPW-GTH one-centre & -37.39 & -40.08 & -113.72 & 5.03\\
+\midrule
+PBE & -6.51 & -28.24 & -73.24 & 22.70\\
+PBE+D3 & -25.07 & -43.76 & -109.90 & 3.76\\
+PBE+MBD & -22.74 & -42.10 & -109.11 & 3.72\\
+revPBE+D3 & -22.60 & -38.32 & -99.88 & 5.18\\
+SCAN+rVV10 & -31.47 & -41.69 & -113.55 & 3.54\\
+vdW-DF2 & -32.75 & -39.70 & -103.85 & 3.17\\
+PBE0+MBD & -23.74 & -38.99 & -109.40 & 2.45\\
+MP2/CBS & -27.81 & -38.34 & -108.66 & 0.63\\
+SCS(MI)-MP2/CBS & -25.59 & -33.31 & -101.42 & 5.26\\
+Multi-level CCSD(T) & -29.4 & -37.6 & -111.0 & 1.03\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \FloatBarrier
 
-\section{Pressure Derivatives and Compressibilities}
-\label{sec:pressure}
+\section{Ice lattice energies and relative phase energies}
+\label{sec:ice-basis}
 
-The third-order Birch--Murnaghan fit supplies $V_0$, $B_0$, and $B'_0=(\partial B/\partial P)_{P=0}$ in addition to $E_0$. Its energy expression is
+The AE comparison includes all thirteen DMC-ICE13 phases at both orbital-basis levels, namely Ih, II, III, IV, VI, VII, VIII, IX, XI, XIII, XIV, XV, and XVII. Their electronic lattice energies provide a second test of the basis sensitivity observed for the molecular crystals. The DMC references are from Della Pia \emph{et al.}\cite{DellaPia2022Ice}
+
+\subsection{ICE13 electronic protocol and molecular reference}
+\label{sec:ice-protocol}
+
+Both basis levels use the same fixed crystal geometries, Skala--D3(BJ), explicit-electron Hamiltonian, joint one-centre reconstruction, 800/60~Ry cutoffs, and 150/770 atom quadrature. At each basis level, the crystal and isolated water reference use matched basis, cutoff, and quadrature settings, with nonperiodic electrostatics for the molecule. The SCF threshold is $5\times10^{-7}$ with OT. The QZVPP-ae crystals use $\Gamma$-centred $3^3$ meshes with full point-group reduction through spglib.\cite{Togo2024Spglib} The inputs specify the symmetry tolerances and irreducible meshes for each phase.
+
+The TZVPP-ae calculations use CP2K's K290 symmetry backend, including its inversion fallback for ice IX. Separate same-basis spglib checks for IX and VII change the energy by $-0.000035$ and $+0.000200$~kJ~mol$^{-1}$ per molecule, respectively. These controls distinguish the symmetry-backend change from the much larger basis shifts. For XIII, the irreducible meshes contain 14 points with the TZVPP-ae basis and 10 with the QZVPP-ae basis, both with full point-group reduction. Its TZVPP-ae and QZVPP-ae protocols differ in orbital basis, symmetry backend, and symmetry tolerances.
+
+The gas-phase reference is a centred isolated water molecule at the reconstructed Partridge--Schwenke equilibrium geometry, with OH distance 0.95865~\AA{} and HOH angle $104.348^\circ$.\cite{Gillan2012WaterClusters} Its total energies are $-200621.54001019$ and $-200683.26812332$~kJ~mol$^{-1}$ with the TZVPP-ae and QZVPP-ae bases, respectively. This geometry follows the equilibrium molecular reference, although a direct comparison with the original DMC monomer coordinates was not possible because that file was unavailable. Any molecular-reference mismatch would shift all absolute ice lattice energies together. Relative phase energies cancel that molecular reference exactly.
+
+
+\subsection{Absolute and relative lattice energies}
+\label{sec:ice-results}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Complete matched DMC-ICE13 comparison. Electronic lattice energies and signed residuals are in kJ~mol$^{-1}$ per water molecule, with $\delta=E_{\mathrm{latt}}-E_{\mathrm{DMC}}$. Parentheses give DMC statistical uncertainties. MAE, mean signed error (ME), and root-mean-square error (RMSE) use all thirteen phases at each basis level.}
+\label{tab:ice-basis}
+\begin{tabular}{lrrrrr}
+\toprule
+Phase & TZVPP-ae & QZVPP-ae & DMC & $\delta_{\rm TZ}$ & $\delta_{\rm QZ}$\\
+\midrule
+Ih & -76.948 & -57.727 & -59.45(7) & -17.498 & 1.723\\
+II & -80.829 & -57.918 & -59.14(7) & -21.689 & 1.222\\
+III & -76.814 & -55.868 & -58.20(7) & -18.614 & 2.332\\
+IV & -77.539 & -54.809 & -55.62(7) & -21.919 & 0.811\\
+VI & -80.663 & -56.275 & -57.67(7) & -22.993 & 1.395\\
+VII & -80.495 & -55.128 & -54.46(7) & -26.035 & -0.668\\
+VIII & -79.642 & -54.803 & -55.22(8) & -24.422 & 0.417\\
+IX & -78.841 & -57.209 & -58.85(7) & -19.991 & 1.641\\
+XI & -77.043 & -57.760 & -59.29(8) & -17.753 & 1.530\\
+XIII & -79.942 & -57.036 & -57.33(7) & -22.612 & 0.294\\
+XIV & -81.015 & -57.142 & -57.75(7) & -23.265 & 0.608\\
+XV & -80.474 & -56.286 & -57.71(7) & -22.764 & 1.424\\
+XVII & -75.684 & -56.674 & -57.70(8) & -17.984 & 1.026\\
+\midrule
+MAE & -- & -- & -- & 21.349 & 1.161\\
+ME & -- & -- & -- & -21.349 & 1.058\\
+RMSE & -- & -- & -- & 21.511 & 1.292\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+Table~\ref{tab:ice-basis} reports the phase-resolved lattice energies, signed residuals, and aggregate errors. All thirteen TZVPP-ae energies overbind. With the QZVPP-ae basis, only VII overbinds and III has the largest absolute residual. Thus, the large systematic TZVPP-ae overbinding is not retained with the enlarged AE basis and fully reduced k-point protocol.  As for the three molecular crystals, enlarging the AE basis improves the balance between crystal and gas-phase energies. The remaining errors generally exceed the DMC statistical uncertainties quoted in the table.
+
+
+
+\begin{table}[htbp]
+\centering\small
+\caption{Relative electronic energies with respect to ice Ih, in kJ~mol$^{-1}$ per water molecule. The MAE uses all twelve nontrivial differences, excluding the identically zero Ih row. DMC differences are calculated from the rounded absolute energies in Table I of Ref.~\citenum{DellaPia2022Ice}, so the XI value is 0.16 rather than its separately rounded 0.15. The gas-phase reference cancels exactly.}
+\label{tab:ice-relative}
+\begin{tabular}{lrrrr}
+\toprule
+Phase & TZVPP-ae & QZVPP-ae & DMC & QZVPP-ae--DMC\\
+\midrule
+Ih & 0.000 & 0.000 & 0.00 & 0.000\\
+II & -3.881 & -0.190 & 0.31 & -0.500\\
+III & 0.133 & 1.859 & 1.25 & 0.609\\
+IV & -0.592 & 2.918 & 3.83 & -0.912\\
+VI & -3.716 & 1.452 & 1.78 & -0.328\\
+VII & -3.547 & 2.600 & 4.99 & -2.390\\
+VIII & -2.694 & 2.924 & 4.23 & -1.306\\
+IX & -1.894 & 0.518 & 0.60 & -0.082\\
+XI & -0.095 & -0.033 & 0.16 & -0.193\\
+XIII & -2.994 & 0.692 & 2.12 & -1.428\\
+XIV & -4.068 & 0.585 & 1.70 & -1.115\\
+XV & -3.527 & 1.442 & 1.74 & -0.298\\
+XVII & 1.263 & 1.054 & 1.75 & -0.696\\
+\midrule
+MAE & 4.173 & 0.821 & -- & --\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+The relative energies in Table~\ref{tab:ice-relative} test the balance among condensed phases without a gas-phase reference. For a phase $p$ containing $N_p$ water molecules per cell, we evaluate
+\begin{equation}
+ \Delta E_p = E_p/N_p-E_{\mathrm{Ih}}/N_{\mathrm{Ih}}.
+\end{equation}
+Here, $E_p$ is the total cell energy of phase $p$, and $E_{\mathrm{Ih}}$ and $N_{\mathrm{Ih}}$ are the corresponding energy and molecule count for ice Ih, so $\Delta E_p$ is a relative energy per water molecule.
+The smaller relative-energy errors show that the basis improvement is not merely a common shift in absolute binding. The relative-energy RMSE decreases from 4.857 to 1.036~kJ~mol$^{-1}$.  A systematic bias remains in the relative energies, as QZVPP-ae underestimates eleven of the twelve differences, with a mean signed error of $-0.720$~kJ~mol$^{-1}$. Ice XIII illustrates how close absolute agreement can coexist with a larger relative-energy error. II and XI remain slightly below Ih with the QZVPP-ae basis, unlike the DMC central values, and VII has the largest relative residual.  The comparison concerns electronic energies at fixed geometries, not finite-temperature phase stability, which also requires vibrational and pressure contributions.
+
+\FloatBarrier
+
+\section{Ten-solid equations of state}
+\label{sec:solids}
+
+\subsection{Structures and equation of state}
+\label{sec:solid-structures}
+
+The selected solids are AlN, AlP, BN, BP, C, LiCl, MgO, MgS, Si, and SiC from the Goldzak set.\cite{Goldzak2022Solids} All use conventional cubic eight-atom cells. Energies are evaluated at volumes around the static-lattice experimental volume, with the same volume set in all four representations for each solid. Third-order Birch--Murnaghan fits give the equilibrium lattice constant and elastic response under isotropic compression. The two GAPW-AE/GTH variants reuse the GAPW-AE curves for BN and C.
+
+The energy is fitted to
 \begin{equation}
  E(V)=E_0+\frac{9V_0B_0}{16}
  \left[B'_0(x-1)^3+(6-4x)(x-1)^2\right],\qquad
- x=(V_0/V)^{2/3}.
+ x=(V_0/V)^{2/3},
 \end{equation}
-The zero-pressure compressibility is $\kappa_0=1/B_0$. These quantities require no new SCF calculation. $B'_0$ depends on the third derivative of the fitted energy and is more sensitive to the fit interval and numerical noise than the minimum location. We therefore supplement the full-window values with endpoint-omission sensitivity rather than assigning artificial high precision from the least-squares fit.
+where $E(V)$ is the total energy of a cell of volume $V$, $E_0$ and $V_0$ are the equilibrium energy and volume, $B_0$ is the bulk modulus, and $B'_0=(\partial B/\partial P)_{P=0}$ is its pressure derivative at zero pressure $P$. The dimensionless variable $x$ expresses the volume ratio, and the fitted cubic lattice constant is $a_0=V_0^{1/3}$.
 
-\input{eos-extra-table}
+\subsection{Ten-solid electronic protocol}
+\label{sec:solid-settings}
 
-The full-window $B'_0$ values span 2.80--5.26. The largest endpoint-induced change, 1.90, occurs for GAPW-XC AlN, whose full-window value is 2.80. This substantial sensitivity cautions against assigning physical significance to small differences between fitted pressure derivatives. The accompanying machine-readable analysis retains both endpoint tests and identifies cases in which an omitted endpoint no longer brackets the minimum.
+All calculations use 800/60~Ry cutoffs, 150 radial points, the 770-point Lebedev rule, and the small extended one-centre basis. All are neutral, spin-restricted calculations with UZH 2026.2 basis and potential definitions.\cite{Mirhosseini2026UZH} GAPW-XC/GTH uses TZV2P-GTH bases and the corresponding element-specific GTH potentials for every atom. GAPW-AE uses TZVPP-ae orbital bases and explicit core electrons for every element. Both series cover all ten solids.
 
-The matched primary literature tables provide $a_0$ and $B_0$ but no consistently curated common $B'_0$ reference set. We report $B'_0$ as a derived model prediction with a fit-window diagnostic, not an accuracy ranking against an invented reference. Compressibility comparisons follow directly from the same matched $B_0$ values. They contain no independent evidence beyond that observable. The three molecular crystals have only paired single-point energies, so no bulk modulus, pressure derivative, elastic tensor, or equilibrium volume is inferred for them.
+The two GAPW-AE/GTH variants instead use a fixed element-wise selection. Li, B, C, N, and O retain the TZVPP-ae basis, while Mg, Al, Si, P, S, and Cl use the TZV2P-GTH basis. This selection was not required by missing AE bases, which are available for every LC10 element. GAPW-AE/GTH (direct) uses direct GTH valence fields. GAPW-AE/GTH (1C) uses smooth GTH valence fields plus one-centre hard-minus-soft contributions. The pseudopotentials and orbital bases are identical between these two variants. Their direct/1C distinction applies only to GTH atoms, and intrinsic AE reconstruction is retained in both.
 
-\section{Reproducibility and Numerical Limits}
-\label{sec:reproducibility}
+The fixed selection gives genuinely mixed AE/GTH calculations for AlN, BP, LiCl, MgO, and SiC, all-GTH calculations for AlP, MgS, and Si, and the same all-AE calculation for BN and C. The last two therefore provide no independent direct/one-centre test. The eight independent comparisons between direct and one-centre GTH treatments comprise five mixed and three all-GTH systems. Every reported energy includes D3(BJ). Diagonalization and OT use residual thresholds of $5\times10^{-6}$ and $5\times10^{-7}$, respectively. Exact inputs specify the remaining dispersion and integration conventions.
 
-The molecular, molecular-crystal, ice, and solid subsets use distinct documented protocols and are analysed separately. Each reported energy is linked to its executed input, model and executable versions, SCF convergence, and normal termination record. Replicate calculations count once. The archive distinguishes production energies from the independent numerical controls and preserves the input and source hashes needed to reproduce the reported quantities. The molecular QZVPP ethane outlier remains explicitly identified as unresolved despite normal SCF termination. The ice comparison uses the same thirteen phases at both basis levels, including Ih for the relative energies. The Si and diamond QZVPP controls do not replace the uniform ten-solid TZVPP comparison.
+The actual $\Gamma$-centred meshes are listed in Table~\ref{tab:actual-k-meshes}. The mesh is identical across representations at each volume but can change with volume within an EOS. The selected full/reduced-mesh checks in Sec.~\ref{sec:symmetry-meshes} constrain symmetry reduction for the tested geometries and meshes.
 
-The ESI reports available convergence and sensitivity data rather than claiming a universal bound on basis, integration, or k-point error. In particular, the present work does not provide complete-basis extrapolation, BSSE correction for the molecular crystals, converged phonons, finite-temperature thermodynamics, or cohesive energies for the ten solids. Such quantities would require additional calculations and reference choices. The reported lattice-energy and structural trends remain useful, provided those distinctions are maintained.
+
+\subsection{Basis sensitivity of structural observables}
+\label{sec:solid-basis}
+
+TZVPP-ae and QZVPP-ae are compared at identical volumes for Si, diamond, and MgO. We define the basis-induced energy shift as
+\begin{equation}
+ \delta E(V)=E_{\mathrm{QZ}}(V)-E_{\mathrm{TZ}}(V).
+\end{equation}
+Here, $E_{\mathrm{TZ}}$ and $E_{\mathrm{QZ}}$ are evaluated with the TZVPP-ae and QZVPP-ae bases, respectively, at the same cell volume $V$.
+A constant $\delta E$ changes only the energy origin. Its volume dependence can instead alter the equilibrium volume, curvature, and higher derivatives that determine the elastic response.
+
+Geometry, full k-point mesh, core treatment, cutoffs, and quadrature are unchanged at each common volume. The QZVPP-ae calculations use full point-group reduction, through spglib for Si and diamond and the native K290 backend for MgO, and diagonalization with an SCF threshold of $5\times10^{-6}$. Same-basis checks reproduce the TZVPP-ae energies to $4.59\times10^{-4}$~kJ~mol$^{-1}$ of cells for Si and $1.59\times10^{-5}$~kJ~mol$^{-1}$ of cells for diamond. The corresponding MgO check differs by $6.72\times10^{-3}$~kJ~mol$^{-1}$ of cells. These small differences separate the basis effect from changes in the executable and symmetry path.
+
+\begin{table}[htbp]
+\centering\small
+\caption{AE basis-set comparison. Lattice constants are in \AA{} and bulk moduli in GPa. Both bases use the same volume set. Experimental static-lattice references are from Ref.~\citenum{Goldzak2022Solids}. These three QZVPP-ae controls do not replace the uniform ten-solid TZVPP-ae comparison.}
+\label{tab:solid-basis}
+\begin{tabular}{llrr}
+\toprule
+Solid & Basis/reference & $a_0$ & $B_0$\\
+\midrule
+Si & TZVPP-ae & 5.3747 & 100.36\\
+Si & QZVPP-ae & 5.3551 & 106.06\\
+Si & Experiment & 5.4210 & 100.30\\
+C & TZVPP-ae & 3.5292 & 491.16\\
+C & QZVPP-ae & 3.5365 & 475.81\\
+C & Experiment & 3.5530 & 453.30\\
+MgO & TZVPP-ae & 4.0935 & 198.84\\
+MgO & QZVPP-ae & 4.0904 & 197.45\\
+MgO & Experiment & 4.1890 & 173.00\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+The response is material dependent (Table~\ref{tab:solid-basis}). For diamond, QZVPP-ae increases $a_0$ by 0.00735~\AA{} and lowers $B_0$ by 15.35~GPa, improving both relative to experiment. For Si, $a_0$ decreases by 0.01950~\AA{} and $B_0$ increases by 5.70~GPa, worsening both errors. MgO changes much less, with shifts of $-0.00307$~\AA{} and $-1.39$~GPa. Its lattice constant remains substantially shorter than experiment, while its bulk modulus improves slightly but remains too large. Across the sampled volumes, the span of $\delta E(V)$ is 1.798, 2.316, and 0.211~kJ~mol$^{-1}$ of atoms for diamond, Si, and MgO, respectively. These nonconstant shifts explain why the basis changes affect the fitted structure as well as the absolute energy.
+
+The basis-set tests for molecular crystals and ice in Secs.~\ref{sec:crystal-basis} and \ref{sec:ice-basis} identify substantial basis contributions to crystal--molecule energy differences. The structural observables instead depend on how the crystal energy varies with volume. The uniform ten-solid comparison below uses the TZVPP-ae protocol.
+
+\subsection{Matched literature comparisons}
+\label{sec:solid-literature}
+
+All methods are compared against the same primary static-lattice experimental values from Goldzak \emph{et al.}\cite{Goldzak2022Solids} Their Hartree--Fock (HF), second-order M{\o}ller--Plesset perturbation theory (MP2), spin-component-scaled MP2 (SCS-MP2), and scaled opposite-spin MP2 (SOS-MP2) results cover all ten selected solids (Table~\ref{tab:literature-Goldzak2022}). Zhang \emph{et al.}\cite{Zhang2018Solids} supply local-density approximation (LDA), PBE, PBEsol, M06-L, SCAN, and HSE06 values for nine of the selected solids (Table~\ref{tab:literature-Zhang2018}). AlN is omitted from this comparison because it is not reported in that work. We use their uncorrected static electronic values, not predictions with zero-point corrections. Their SCAN calculations were non-self-consistent on PBE densities.
+
+SCS-MP2 and SOS-MP2 give matched ten-solid lattice MAEs of 0.0125 and 0.0149~\AA{}, and bulk-modulus MAEs of 4.10 and 3.88~GPa. The native ranges are 0.0728--0.0844~\AA{} and 16.61--21.77~GPa (main-text Table~\ref{paper-tab:lc10-primary} and Table~\ref{tab:lc10-reconstruction}). The SCS-MP2 comparison in Fig.~\ref{fig:periodic-residuals} highlights the systematic native lattice contraction across this set. Established semilocal and screened-hybrid methods also have smaller lattice errors on the material sets shared with those studies. These results identify a limitation of the present structural predictions. The comparisons do not uniquely separate functional and numerical contributions.
+
+Alternative experimental moduli listed by Goldzak \emph{et al.} for BN, BP, and MgO are 410.2, 168.0, and 169.8~GPa, instead of the primary 388.5, 176.5, and 173.0~GPa. Simultaneously replacing all three lowers each native ten-solid modulus MAE by 1.00~GPa and leaves the qualitative conclusion intact.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{GAPW-AE/GTH equilibrium lattice constants $a_0$ and bulk moduli $B_0$ using direct and one-centre GTH valence fields. Experimental static-lattice references follow Ref.~\citenum{Goldzak2022Solids}. Each MAE uses all ten solids. Both variants use the GAPW-AE results for BN and C. Across the eight systems containing GTH atoms in the GAPW-AE/GTH variants, the mean absolute direct/one-centre difference is 1.39~GPa, with a maximum of 5.75~GPa for MgO.}
+\label{tab:lc10-reconstruction}
+\begin{tabular}{lrrrrrr}
+\toprule
+& \multicolumn{3}{c}{$a_0$ (\AA{})} & \multicolumn{3}{c}{$B_0$ (GPa)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Solid & Experiment & Direct & One-centre & Experiment & Direct & One-centre \\
+\midrule
+AlN & 4.3680 & 4.2747 & 4.2746 & 206.00 & 240.42 & 240.40 \\
+AlP & 5.4480 & 5.3616 & 5.3621 & 87.00 & 96.36 & 93.12 \\
+BN & 3.5930 & 3.5675 & 3.5675 & 388.50 & 420.87 & 420.87 \\
+BP & 4.5250 & 4.4527 & 4.4527 & 176.50 & 185.86 & 185.86 \\
+C & 3.5530 & 3.5292 & 3.5292 & 453.30 & 491.35 & 491.35 \\
+LiCl & 5.0720 & 4.9178 & 4.9179 & 37.30 & 47.13 & 47.16 \\
+MgO & 4.1890 & 4.0923 & 4.0919 & 173.00 & 213.13 & 207.37 \\
+MgS & 5.1880 & 5.0700 & 5.0697 & 81.00 & 84.17 & 86.22 \\
+Si & 5.4210 & 5.3383 & 5.3383 & 100.30 & 94.13 & 94.13 \\
+SiC & 4.3470 & 4.2556 & 4.2556 & 228.90 & 263.73 & 263.71 \\
+\midrule
+MAE & -- & 0.0844 & 0.0844 & -- & 21.77 & 21.07 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Matched comparison with Ref.~\citenum{Goldzak2022Solids} on the ten-solid set. Every row uses the identical intersection and the Goldzak static-lattice experimental reference. MAE($a_0$) is in \AA{} and MAE($B_0$) in GPa. A dash denotes unavailable data, not zero error. Native rows retain the numerical qualifications discussed in the text.}
+\label{tab:literature-Goldzak2022}
+\begin{tabular}{lrrr}
+\toprule
+Method & Solids & MAE($a_0$) & MAE($B_0$) \\
+\midrule
+GAPW-XC/GTH & 10 & 0.0831 & 16.61 \\
+GAPW-AE & 10 & 0.0728 & 16.89 \\
+GAPW-AE/GTH (direct) & 10 & 0.0844 & 21.77 \\
+GAPW-AE/GTH (1C) & 10 & 0.0844 & 21.07 \\
+HF & 10 & 0.0563 & 15.23 \\
+MP2 & 10 & 0.0201 & 5.71 \\
+SCS-MP2 & 10 & 0.0125 & 4.10 \\
+SOS-MP2 & 10 & 0.0149 & 3.88 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Matched comparison with Ref.~\citenum{Zhang2018Solids} on nine solids. AlN is omitted because no values are reported for it in that work. Every row uses the identical intersection and the Goldzak static-lattice experimental reference. MAE($a_0$) is in \AA{} and MAE($B_0$) in GPa. A dash denotes unavailable data, not zero error. Native rows retain the numerical qualifications discussed in the text.}
+\label{tab:literature-Zhang2018}
+\begin{tabular}{lrrr}
+\toprule
+Method & Solids & MAE($a_0$) & MAE($B_0$) \\
+\midrule
+GAPW-XC/GTH & 9 & 0.0827 & 14.78 \\
+GAPW-AE & 9 & 0.0737 & 16.56 \\
+GAPW-AE/GTH (direct) & 9 & 0.0834 & 20.36 \\
+GAPW-AE/GTH (1C) & 9 & 0.0835 & 19.59 \\
+LDA & 9 & 0.0324 & 4.66 \\
+PBE & 9 & 0.0451 & 12.96 \\
+PBEsol & 9 & 0.0113 & 4.72 \\
+M06-L & 9 & 0.0128 & 3.46 \\
+SCAN & 9 & 0.0123 & 3.08 \\
+HSE06 & 9 & 0.0170 & 5.86 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\small
+\caption{$\Gamma$-centred k-point meshes used along each EOS. The mesh is identical across representations at a given volume but can change with volume. The accompanying inputs give the volume-dependent assignments.}
+\label{tab:actual-k-meshes}
+\begin{tabular}{lr}
+\toprule
+Solid & Meshes \\
+\midrule
+AlN & $5^3$ \\
+AlP & $4^3$ \\
+BN & $6^3$, $7^3$ \\
+BP & $5^3$ \\
+C & $6^3$, $7^3$ \\
+LiCl & $5^3$ \\
+MgO & $5^3$, $6^3$ \\
+MgS & $4^3$, $5^3$ \\
+Si & $4^3$, $5^3$ \\
+SiC & $5^3$ \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{eos-literature-residuals.png}
+\caption{Signed lattice-constant and bulk-modulus errors against the common Goldzak static-lattice reference. SCS-MP2 provides a correlated-method comparison on the same solids. Systematic native lattice contraction persists across representations.}
+\label{fig:periodic-residuals}
+\end{figure}
+
+\FloatBarrier
+
+\section{Electronic band gaps}
+\label{sec:bandgaps}
+
+\subsection{Material selection}
+\label{sec:bandgap-selection}
+
+The dataset comprises 50 band-gap results for 28 materials with experimental references taken from the literature, including 20 AE, 23 GAPW-XC/GTH, and seven mixed AE/GTH results (Table~\ref{tab:bandgap-outcomes}).\cite{Lee2021Gaps} The primary representations are GAPW-XC/GTH and GAPW-AE wherever the available AE bases cover all atoms. Mixed AE/GTH calculations use \texttt{PAW\_ONE\_CENTER}.
+
+\subsection{Band-gap geometries and electronic protocol}
+\label{sec:bandgap-protocol}
+
+
+
+AE atoms use TZVPP-ae and \texttt{POTENTIAL ALL}. GTH atoms use TZV2P-GTH and GTH potentials. The seven mixed AE/GTH calculations treat P/As in InP/InAs, S/Se in CdS/CdSe, S/Se in BaS/BaSe, and Mg in MgTe as AE. Their complementary elements use GTH potentials with 13 electrons for In, 12 for Cd, 10 for Ba, and 6 for Te. The Li GTH inputs use three explicit electrons. AE treatment is nonrelativistic and no explicit spin--orbit coupling is included.
+
+The available phases use two-atom primitive FCC cells and half-shifted $6\times6\times6$ Monkhorst--Pack meshes\cite{Monkhorst1976} with 28 irreducible points. The cubic geometries follow the experimental lattices and phases tabulated by Heyd \emph{et al.}\cite{Heyd2005Gaps} LiH uses rocksalt $a=4.084$~\AA{} from the room-temperature geometry reported by Nolan \emph{et al.}\cite{Nolan2009LiH} LiF uses rocksalt $a=4.010$~\AA{} from Matsushita \emph{et al.}\cite{Matsushita2011Gaps}   Zincblende MgS here is distinct from the rocksalt MgS structural test.
+
+The calculations use fixed insulating occupations and k-point diagonalization, with SCF thresholds of $10^{-6}$ or tighter.
+
+Fixed-density band evaluation combines the irreducible $\Gamma$-centred $12^3$ mesh with symmetry-path sampling, giving 198 points. We determine the generalized Kohn--Sham gap from the conduction-band minimum and valence-band maximum across all calculated $k$ points and also report the smallest direct gap. The band extrema need not occur at high-symmetry points.
+
+
+\subsection{Calculated band gaps}
+
+
+
+
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}{llrrrrrrrr}
+\caption{Native and representative published band gaps in eV for all 28 materials. AE, GTH, and Mixed 1C denote GAPW-AE, GAPW-XC/GTH, and mixed AE/GTH one-centre calculations, respectively. D, Z, and R denote diamond, zincblende, and rocksalt. Experimental, PBE, and SCAN values follow Ref.~\citenum{Lee2021Gaps}. HSE and PBE0 follow Ref.~\citenum{Lee2022Hybrids}. A dash denotes an unavailable value.}\label{tab:bandgap-outcomes}\\
+\toprule
+Material & Phase & Exp. & AE & GTH & Mixed 1C & PBE & SCAN & HSE & PBE0 \\
+\midrule
+\endfirsthead
+\toprule
+Material & Phase & Exp. & AE & GTH & Mixed 1C & PBE & SCAN & HSE & PBE0 \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+C & D & 5.48 & 4.895 & 4.735 & -- & 4.33 & 4.64 & 5.32 & 6.07 \\
+Si & D & 1.17 & 1.284 & 0.951 & -- & 0.66 & 0.93 & 1.15 & 1.79 \\
+Ge & D & 0.74 & 0.827 & 0.229 & -- & 0.00 & 0.20 & 0.69 & 1.28 \\
+SiC & Z & 2.42 & 2.036 & -- & -- & 1.50 & 1.81 & 2.26 & 2.97 \\
+BN & Z & 6.22 & 5.828 & 5.358 & -- & 4.64 & 5.03 & 5.80 & 6.55 \\
+BP & Z & 2.40 & 1.949 & 1.712 & -- & 1.38 & 1.67 & 2.00 & 2.69 \\
+BAs & Z & 1.46 & 1.763 & 1.476 & -- & 1.34 & 1.57 & 1.82 & 2.49 \\
+AlP & Z & 2.51 & 2.399 & -- & -- & 1.67 & 1.99 & 2.29 & 2.96 \\
+AlAs & Z & 2.23 & 2.269 & -- & -- & 1.58 & 1.86 & 2.03 & 2.68 \\
+$\beta$-GaN & Z & 3.30 & 2.260 & 1.854 & -- & 1.79 & 1.86 & 2.72 & 3.42 \\
+GaP & Z & 2.35 & 2.122 & 1.923 & -- & 1.66 & 1.85 & 2.25 & 2.92 \\
+GaAs & Z & 1.52 & 1.525 & 0.852 & -- & 0.51 & 0.62 & 1.18 & 1.79 \\
+InP & Z & 1.42 & -- & 1.226 & 1.380 & 0.61 & 0.57 & 1.33 & 1.96 \\
+InAs & Z & 0.41 & -- & 0.239 & 0.388 & 0.00 & 0.00 & -- & -- \\
+ZnS & Z & 3.66 & 3.514 & 2.536 & -- & 2.12 & 2.38 & 3.08 & 3.77 \\
+ZnSe & Z & 2.70 & 2.570 & 1.650 & -- & 1.33 & 1.60 & 2.09 & 2.74 \\
+CdS & Z & 2.55 & -- & 1.652 & 1.813 & 1.15 & 1.22 & 1.96 & 2.63 \\
+CdSe & Z & 1.90 & -- & 1.147 & 1.243 & 0.64 & 0.72 & 1.29 & 1.92 \\
+MgS & Z & 5.40 & 4.580 & 4.234 & -- & 3.57 & 4.14 & -- & -- \\
+MgTe & Z & 3.60 & -- & 2.944 & 2.979 & 2.59 & 3.16 & -- & -- \\
+MgO & R & 7.22 & 5.900 & 5.660 & -- & 4.93 & 5.59 & -- & -- \\
+MgSe & R & 2.47 & 2.675 & 2.431 & -- & 2.01 & 2.58 & -- & -- \\
+BaS & R & 3.88 & -- & 2.544 & 2.639 & 2.26 & 2.58 & -- & -- \\
+BaSe & R & 3.58 & -- & 2.226 & 2.350 & 2.07 & 2.39 & -- & -- \\
+BaTe & R & 3.08 & -- & 1.782 & -- & 1.74 & 2.03 & -- & -- \\
+LiH & R & 4.90 & 4.103 & -- & -- & 3.01 & 3.61 & 4.01 & 4.69 \\
+LiF & R & 14.20 & 10.761 & -- & -- & 9.33 & 10.08 & 11.44 & 12.22 \\
+LiCl & R & 9.40 & 7.828 & 7.333 & -- & 6.40 & 7.21 & 7.78 & 8.52 \\
+\end{longtable}
+\endgroup
+\begin{table}[htbp]
+\centering
+\caption{Native errors in eV on the available population for each method and literature comparison. The semilocal and hybrid XC benchmark populations follow Refs.~\citenum{Lee2021Gaps} and \citenum{Lee2022Hybrids}, respectively. The material lists below define the population for each row.}\label{tab:bandgap-native-statistics}
+\begin{tabular}{llrrrrl}
+\toprule
+Comparison & Method & $n$ & ME & MAE & RMSE & Maximum \\
+\midrule
+Semilocal & GAPW-AE & 20 & -0.533 & 0.608 & 0.988 & 3.439 (LiF) \\
+Semilocal & GAPW-XC/GTH & 23 & -0.835 & 0.837 & 0.987 & 2.067 (LiCl) \\
+Semilocal & Mixed AE/GTH (1C) & 7 & -0.650 & 0.650 & 0.794 & 1.241 (BaS) \\
+Hybrid XC & GAPW-AE & 17 & -0.513 & 0.578 & 1.002 & 3.439 (LiF) \\
+Hybrid XC & GAPW-XC/GTH & 15 & -0.776 & 0.778 & 0.926 & 2.067 (LiCl) \\
+Hybrid XC & Mixed AE/GTH (1C) & 3 & -0.478 & 0.478 & 0.570 & 0.737 (CdS) \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+\paragraph{Available populations.}
+Semilocal comparison, GAPW-AE ($n=20$) includes AlAs, AlP, BAs, BN, BP, C, GaAs, GaP, Ge, LiCl, LiF, LiH, MgO, MgS, MgSe, Si, SiC, ZnS, ZnSe, $\beta$-GaN.
+
+Semilocal comparison, GAPW-XC/GTH ($n=23$) includes BAs, BN, BP, BaS, BaSe, BaTe, C, CdS, CdSe, GaAs, GaP, Ge, InAs, InP, LiCl, MgO, MgS, MgSe, MgTe, Si, ZnS, ZnSe, $\beta$-GaN.
+
+Semilocal comparison, Mixed AE/GTH (1C) ($n=7$) includes BaS, BaSe, CdS, CdSe, InAs, InP, MgTe.
+
+Hybrid XC comparison, GAPW-AE ($n=17$) includes AlAs, AlP, BAs, BN, BP, C, GaAs, GaP, Ge, LiCl, LiF, LiH, Si, SiC, ZnS, ZnSe, $\beta$-GaN.
+
+Hybrid XC comparison, GAPW-XC/GTH ($n=15$) includes BAs, BN, BP, C, CdS, CdSe, GaAs, GaP, Ge, InP, LiCl, Si, ZnS, ZnSe, $\beta$-GaN.
+
+Hybrid XC comparison, Mixed AE/GTH (1C) ($n=3$) includes CdS, CdSe, InP.
+\begin{table}[htbp]
+\centering
+\caption{Native errors in eV on matched core-treatment subsets. AE-full contains the fifteen materials with both pure-AE and GTH results, AE-XC overlap its twelve-material overlap with the hybrid XC benchmark, and Mixed the seven compounds with mixed AE/GTH and GTH results. The material lists below define these sets.}\label{tab:bandgap-core-subsets}
+\begin{tabular}{lrlrrrl}
+\toprule
+Set & $n$ & Method & ME & MAE & RMSE & Maximum \\
+\midrule
+AE-full & 15 & Skala AE & -0.398 & 0.493 & 0.679 & 1.572 (LiCl) \\
+AE-full & 15 & Skala GTH & -0.837 & 0.839 & 1.008 & 2.067 (LiCl) \\
+AE-XC overlap & 12 & Skala AE & -0.336 & 0.421 & 0.609 & 1.572 (LiCl) \\
+AE-XC overlap & 12 & Skala GTH & -0.816 & 0.819 & 0.976 & 2.067 (LiCl) \\
+Mixed & 7 & Skala mixed 1C & -0.650 & 0.650 & 0.794 & 1.241 (BaS) \\
+Mixed & 7 & Skala GTH & -0.766 & 0.766 & 0.885 & 1.354 (BaSe) \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+\paragraph{Matched core-treatment populations.}
+AE-full comprises BAs, BN, BP, C, GaAs, GaP, Ge, LiCl, MgO, MgS, MgSe, Si, ZnS, ZnSe, $\beta$-GaN.
+AE-XC overlap comprises BAs, BN, BP, C, GaAs, GaP, Ge, LiCl, Si, ZnS, ZnSe, $\beta$-GaN.
+Mixed comprises BaS, BaSe, CdS, CdSe, InAs, InP, MgTe.
+
+
+\subsection{Reference populations and statistical interpretation}
+
+The experimental values and ten local or semilocal comparators are taken from Table~1 of the author manuscript in Ref.~\citenum{Lee2021Gaps}. The twelve hybrid comparators use Table~AII of the author manuscript in Ref.~\citenum{Lee2022Hybrids}, specifically the truncated-Coulomb band results, not its Madelung-only table. The local and semilocal study uses GTH-LDA and unc-def2-QZVP-GTH. The hybrid study uses GTH with the uncontracted basis, a Madelung correction during SCF, and truncated Coulomb exchange for band evaluation.
+
+The SC/40 reference compilation underlying most of these experimental entries includes alloy-extrapolated values and weighted averages of measured spin--orbit splittings intended to approximate scalar-relativistic gaps.\cite{Heyd2005Gaps} The reference column is therefore a historical literature benchmark, not a uniform collection of raw optical onsets at one temperature.
+
+The local and semilocal comparison contains LDA, five GGAs (PBE, PBEsol, revPBE, BLYP, and B97-D), and four meta-GGAs (SCAN, M06-L, MN15-L, and B97M-rV). The classification describes the underlying XC form and does not remove the dispersion or nonlocal correlation terms in the named approximations. All twelve hybrid comparators include exact exchange. They comprise global hybrid GGAs, global hybrid meta-GGAs, the screened hybrid HSE, and range-separated hybrids.
+
+For each population, gap errors are $E_g^{\rm calc}-E_g^{\rm ref}$. ME, MAE, and RMSE follow the definitions in Sec.~\ref{sec:scope}, and the maximum is the largest absolute error. Table~\ref{tab:bandgap-native-statistics} summarizes the native errors on the largest available sets, which differ between methods and publications. The machine-readable dataset contains all four measures and individual signed errors for every maximum-available and matched population, including the full literature comparisons and the local or semilocal functionals evaluated on the hybrid-benchmark populations. The matched tables below use identical material sets to separate differences in accuracy from differences in coverage.
+
+Of the 28 materials in Table~\ref{tab:bandgap-outcomes}, 22 have both GAPW-XC/GTH and the preselected AE-or-mixed one-centre result. The combined series comprises fifteen pure-AE and seven genuinely mixed results. Table~\ref{tab:bandgap-core-subsets} reports the pure-AE/GTH and mixed/GTH comparisons on separate matched subsets, including the pure-AE overlap with the hybrid benchmark.
+
+Fifteen of the 22 materials also have published hybrid-functional results. This overlap contains twelve pure-AE and three mixed results (InP, CdS, and CdSe). BaS, BaSe, InAs, MgO, MgS, MgSe, and MgTe have only local or semilocal comparators here. Table~\ref{tab:bandgap-paired-combined-Lee2021} reports all error measures on the full 22-material population. Main-text Table~\ref{paper-tab:bandgap-method-errors} uses exactly the fifteen-material overlap for the local, semilocal, and hybrid functionals.
+
+\begingroup\small\setlength{\tabcolsep}{4pt}
+\begin{table}[htbp]
+\centering
+\caption{Matched errors in eV on the 22 materials with both AE-or-mixed and GTH results in Table~\ref{tab:bandgap-outcomes}. Skala AE / mixed 1C comprises fifteen AE and seven mixed results. All ten local or semilocal comparators use exactly this population.\cite{Lee2021Gaps} The set comprises BAs, BN, BP, BaS, BaSe, C, CdS, CdSe, GaAs, GaP, Ge, InAs, InP, LiCl, MgO, MgS, MgSe, MgTe, Si, ZnS, ZnSe, $\beta$-GaN.}\label{tab:bandgap-paired-combined-Lee2021}
+\begin{tabular}{llrrrl}
+\toprule
+Method & XC class & ME & MAE & RMSE & Maximum \\
+\midrule
+Skala AE / mixed 1C & Native & -0.478 & 0.543 & 0.718 & 1.572 (LiCl) \\
+Skala GTH & Native & -0.814 & 0.816 & 0.971 & 2.067 (LiCl) \\
+LDA & LDA & -1.452 & 1.452 & 1.612 & 3.390 (LiCl) \\
+PBE & GGA & -1.220 & 1.220 & 1.379 & 3.000 (LiCl) \\
+PBEsol & GGA & -1.361 & 1.361 & 1.518 & 3.220 (LiCl) \\
+revPBE & GGA & -1.125 & 1.125 & 1.280 & 2.790 (LiCl) \\
+BLYP & GGA & -1.105 & 1.117 & 1.275 & 2.840 (LiCl) \\
+B97-D & GGA & -1.024 & 1.035 & 1.181 & 2.570 (LiCl) \\
+SCAN & meta-GGA & -0.924 & 0.944 & 1.075 & 2.190 (LiCl) \\
+M06-L & meta-GGA & -0.875 & 0.928 & 1.115 & 2.320 (LiCl) \\
+MN15-L & meta-GGA & -1.013 & 1.087 & 1.219 & 1.920 (LiCl) \\
+B97M-rV & meta-GGA & -0.850 & 0.889 & 1.034 & 2.180 (LiCl) \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+\endgroup
+
+
+On the 22-material population, the AE-or-mixed and GAPW-XC/GTH MAEs are 0.543 and 0.816~eV, compared with 1.220 for PBE, 0.944 for SCAN, and 0.889~eV for B97M-rV. Their signed MEs of $-0.478$ and $-0.814$~eV indicate predominantly underestimated gaps. On the fifteen-material overlap, the native MAEs become 0.432 and 0.778~eV. HSE, PBE0, and B3LYP give 0.435, 0.402, and 0.405~eV. The AE-or-mixed RMSE of 0.602~eV exceeds their respective 0.578, 0.502, and 0.510~eV values.
+
+The 22-material comparison uses the published MgO reference of 7.22~eV.\cite{Lee2021Gaps} Rafferty and Brown report a direct EELS threshold of $7.22\pm0.03$~eV in their Table~I, alongside a literature value of 7.8~eV.\cite{Rafferty1998Gaps}  Substituting the alternative literature reference of 7.83~eV raises the AE-or-mixed and GAPW-XC/GTH MAEs from 0.543/0.816 to 0.571/0.844~eV. PBE and SCAN change from 1.220/0.944 to 1.248/0.971~eV on the same population. The two reference values originate from EELS and optical measurements, respectively.
+
+The fifteen-material population shared by AE and GTH retains Lee's MgO reference of 7.22~eV. Using 7.83~eV instead raises the respective MAEs from 0.493/0.839 to 0.534/0.880~eV. The PBE, SCAN, and B97M-rV MAEs on that same population change from 1.255/0.937/0.885 to 1.295/0.978/0.925~eV. The baseline statistics use the original reference values.
+
+For cubic BAs, Yue \emph{et al.} determine an indirect absorption edge of 1.82~eV at room temperature, whereas both Lee tables use 1.46~eV.\cite{Yue2020BAs} Table~\ref{tab:bandgap-BAs-sensitivity} changes only this reference for every method on the same populations. The 22-material AE-or-mixed/GTH MAEs become 0.532/0.831~eV. On the fifteen-material hybrid overlap, the AE-or-mixed MAE becomes 0.416~eV, compared with 0.411 for HSE, 0.378 for PBE0, and 0.381~eV for B3LYP. Which of Skala and HSE has the lower MAE therefore depends on the reference convention.
+
+\begin{table}[htbp]
+\centering
+\caption{Separate BAs reference sensitivity in eV for representative comparators. Only the BAs reference changes from Lee's 1.46 to the 1.82~eV room-temperature absorption estimate of Yue \emph{et al.}\cite{Yue2020BAs} The populations remain the same 22 and fifteen materials as in Table~\ref{tab:bandgap-paired-combined-Lee2021} and main-text Table~\ref{paper-tab:bandgap-method-errors}, respectively. All other references and calculated gaps are unchanged. All comparator statistics and separate pure-AE subsets are retained in the machine-readable dataset. The Lee-reference tables use the unmodified published references.}\label{tab:bandgap-BAs-sensitivity}
+\begin{tabular}{rlrrrr}
+\toprule
+$n$ & Method & ME & MAE & RMSE & Maximum \\
+\midrule
+22 & Skala AE / mixed 1C & -0.495 & 0.532 & 0.715 & 1.572 \\
+22 & Skala GTH & -0.831 & 0.831 & 0.973 & 2.067 \\
+22 & PBE & -1.236 & 1.236 & 1.382 & 3.000 \\
+22 & SCAN & -0.940 & 0.950 & 1.076 & 2.190 \\
+22 & B97M-rV & -0.866 & 0.887 & 1.034 & 2.180 \\
+15 & Skala AE / mixed 1C & -0.389 & 0.416 & 0.597 & 1.572 \\
+15 & Skala GTH & -0.800 & 0.800 & 0.930 & 2.067 \\
+15 & PBE & -1.205 & 1.205 & 1.345 & 3.000 \\
+15 & SCAN & -0.971 & 0.971 & 1.087 & 2.190 \\
+15 & B97M-rV & -0.869 & 0.869 & 1.016 & 2.180 \\
+15 & HSE & -0.411 & 0.411 & 0.571 & 1.620 \\
+15 & PBE0 & +0.261 & 0.378 & 0.459 & 0.880 \\
+15 & B3LYP & +0.073 & 0.381 & 0.468 & 1.170 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+
+The experimental reference set includes estimated band gaps and excitonic absorption energies.\cite{Wolverson2001MgS,Zollweg1958Absorption}
+
+For both Ge and MgS, the sampled band gap is indirect in the AE calculations but direct with GAPW-XC/GTH, indicating that the AE/GTH protocol can influence not only the gap magnitude but also the relative positions of the band extrema (Table~\ref{tab:bandgap-edges}).
+
+\begin{longtable}{llrrl}
+\caption{Sampled minimum and minimum direct gaps in eV. D denotes agreement within $10^{-6}$~eV, I a direct-minus-minimum splitting of at least $10^{-3}$~eV, and N an intermediate numerical near-degeneracy. The labels describe the sampled band edges.}\label{tab:bandgap-edges}\\
+\toprule
+Material & Method & Minimum gap & Direct gap & Type \\
+\midrule
+\endfirsthead
+\toprule
+Material & Method & Minimum gap & Direct gap & Type \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+AlAs & GAPW-AE & 2.269 & 3.420 & I \\
+AlP & GAPW-AE & 2.399 & 4.460 & I \\
+BAs & GAPW-AE & 1.763 & 3.875 & I \\
+BAs & GAPW-XC/GTH & 1.476 & 3.761 & I \\
+BN & GAPW-AE & 5.828 & 10.058 & I \\
+BN & GAPW-XC/GTH & 5.358 & 10.057 & I \\
+BP & GAPW-AE & 1.949 & 4.233 & I \\
+BP & GAPW-XC/GTH & 1.712 & 4.228 & I \\
+BaS & GAPW-XC/GTH & 2.544 & 2.665 & I \\
+BaS & Mixed AE/GTH (1C) & 2.639 & 2.755 & I \\
+BaSe & GAPW-XC/GTH & 2.226 & 2.451 & I \\
+BaSe & Mixed AE/GTH (1C) & 2.350 & 2.561 & I \\
+BaTe & GAPW-XC/GTH & 1.782 & 2.176 & I \\
+C & GAPW-AE & 4.895 & 6.716 & I \\
+C & GAPW-XC/GTH & 4.735 & 6.202 & I \\
+CdS & GAPW-XC/GTH & 1.652 & 1.652 & D \\
+CdS & Mixed AE/GTH (1C) & 1.813 & 1.813 & D \\
+CdSe & GAPW-XC/GTH & 1.147 & 1.147 & D \\
+CdSe & Mixed AE/GTH (1C) & 1.243 & 1.243 & D \\
+GaAs & GAPW-AE & 1.525 & 1.525 & D \\
+GaAs & GAPW-XC/GTH & 0.852 & 0.852 & D \\
+GaP & GAPW-AE & 2.122 & 2.761 & I \\
+GaP & GAPW-XC/GTH & 1.923 & 2.247 & I \\
+Ge & GAPW-AE & 0.827 & 1.039 & I \\
+Ge & GAPW-XC/GTH & 0.229 & 0.229 & D \\
+InAs & GAPW-XC/GTH & 0.239 & 0.239 & D \\
+InAs & Mixed AE/GTH (1C) & 0.388 & 0.388 & D \\
+InP & GAPW-XC/GTH & 1.226 & 1.226 & D \\
+InP & Mixed AE/GTH (1C) & 1.380 & 1.380 & D \\
+LiCl & GAPW-AE & 7.828 & 7.828 & D \\
+LiCl & GAPW-XC/GTH & 7.333 & 7.333 & D \\
+LiF & GAPW-AE & 10.761 & 10.761 & D \\
+LiH & GAPW-AE & 4.103 & 4.103 & N \\
+MgO & GAPW-AE & 5.900 & 5.900 & D \\
+MgO & GAPW-XC/GTH & 5.660 & 5.660 & D \\
+MgS & GAPW-AE & 4.580 & 4.664 & I \\
+MgS & GAPW-XC/GTH & 4.234 & 4.234 & D \\
+MgSe & GAPW-AE & 2.675 & 4.136 & I \\
+MgSe & GAPW-XC/GTH & 2.431 & 3.601 & I \\
+MgTe & GAPW-XC/GTH & 2.944 & 2.944 & D \\
+MgTe & Mixed AE/GTH (1C) & 2.979 & 2.979 & D \\
+Si & GAPW-AE & 1.284 & 3.212 & I \\
+Si & GAPW-XC/GTH & 0.951 & 2.865 & I \\
+SiC & GAPW-AE & 2.036 & 5.271 & I \\
+ZnS & GAPW-AE & 3.514 & 3.514 & D \\
+ZnS & GAPW-XC/GTH & 2.536 & 2.536 & D \\
+ZnSe & GAPW-AE & 2.570 & 2.570 & D \\
+ZnSe & GAPW-XC/GTH & 1.650 & 1.650 & D \\
+$\beta$-GaN & GAPW-AE & 2.260 & 2.260 & D \\
+$\beta$-GaN & GAPW-XC/GTH & 1.854 & 1.854 & D \\
+\end{longtable}
+
+
+\subsection{Direct and one-centre valence representations}
+
+The controls in Table~\ref{tab:bandgap-controls} change the GTH valence representation within ordinary GAPW, not the AE reconstruction or the primary protocol. The Si entries use GTH pseudopotentials for all atoms, while BP, MgO, and LiCl use the mixed AE/GTH treatments listed below.  For InP, CdS, and BaS, the direct and one-centre calculations use identical scientific settings apart from \texttt{PAW\_ONE\_CENTER} versus \texttt{DIRECT\_VALENCE}. The executable environments and thread counts are recorded with the input data.
+
+\begin{table}[htbp]
+\centering
+\caption{Ordinary-GAPW direct and one-centre gaps in eV for seven materials. The final column gives the one-centre-minus-direct difference.}\label{tab:bandgap-controls}
+\begin{tabular}{llrrr}
+\toprule
+Material & Actual core treatment & Direct & One-centre & One-centre minus direct \\
+\midrule
+Si & All GTH & 0.950857 & 0.950856 & -0.00000038 \\
+BP & B AE / P GTH & 1.794049 & 1.794045 & -0.00000405 \\
+MgO & O AE / Mg GTH & 5.913617 & 5.922130 & +0.00851297 \\
+LiCl & Li AE / Cl GTH & 7.338573 & 7.338544 & -0.00002818 \\
+InP & Mixed AE/GTH & 1.378229 & 1.379532 & +0.001303 \\
+
+CdS & Mixed AE/GTH & 1.812347 & 1.812683 & +0.000337 \\
+
+BaS & Mixed AE/GTH & 2.638700 & 2.638570 & -0.000131 \\
+
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+
+Direct and one-centre gaps are compared for seven materials, comprising six genuinely mixed AE/GTH systems (BP, MgO, LiCl, InP, CdS, and BaS) and one all-GTH system (Si). The absolute direct-minus-one-centre gap differences are below 0.009~eV throughout this subset. The largest change is 0.008513~eV for MgO, while the direct and one-centre results for InP, CdS, and BaS differ by at most 0.001303~eV. These results show a small sensitivity to the valence representation for the tested systems and numerical settings.
+
+\FloatBarrier
 
 \bibliographystyle{rsc}
-\bibliography{references,pccp-references,x23-references}
+\bibliography{references}
 \end{document}

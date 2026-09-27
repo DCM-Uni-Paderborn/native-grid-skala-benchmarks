@@ -1,82 +1,75 @@
-# Reproducing the PCCP Analysis
+# Reproducing the Paper
 
-All commands below analyze existing data; none launches a new SCF calculation.
-The audit and EOS fitting require Python and NumPy. Figures additionally
-require Matplotlib. LaTeX needs the packages listed in the source
-files and TeX Live's RSC bibliography style.
-
-From the repository root:
+Run from the repository root with Python 3.10 or newer and NumPy.
+Matplotlib is needed only for figures. The commands below do not run CP2K,
+connect to clusters or change the archived data.
 
 ```sh
 python3 -B scripts/audit_pccp_package.py
 python3 -B -m unittest discover -s scripts -p 'test_*.py'
-python3 -B benchmarks/Goldzak12/scripts/verify_selected_package.py
 python3 -B -m unittest discover -s benchmarks/Goldzak12/scripts -p 'test_*.py'
 python3 -B -m unittest discover -s benchmarks/X23-mini/scripts -p 'test_*.py'
+python3 -B benchmarks/Goldzak12/scripts/verify_selected_package.py
+python3 -B scripts/reproduce_paper.py --output /tmp/native-skala-analysis --figures
 ```
 
-Regenerate numerical analysis and figures in a separate checkout, since the
-immutable file audit intentionally detects changed artifacts:
+The audit verifies the complete file inventory and hashes, selected CP2K
+completion records, total energies, molecular stoichiometry, lattice energies,
+band occupations and sampled frontier energies. It recomputes the exact
+matched comparison populations and checks the paper source graph. Do not use
+Python's optimized mode (`-O`), which disables validation assertions.
 
-```sh
-python3 -B benchmarks/Goldzak12/scripts/fit_selected_eos.py
-python3 -B benchmarks/Goldzak12/scripts/analyze_selected_eos.py
-python3 -B benchmarks/Goldzak12/scripts/compare_selected_literature.py
-python3 -B benchmarks/Goldzak12/scripts/build_paper_tables.py
-python3 -B benchmarks/X23-mini/scripts/analyze_results.py
-python3 -B scripts/basis_sensitivity.py --write
-python3 -B benchmarks/X23-mini/scripts/analyze_basis_controls.py
-python3 -B benchmarks/X23-mini/scripts/build_paper_tables.py
-python3 -B paper/pccp/analyse_derivative_checks.py --report convergence/derivatives/periodic-water-20260909/validated-results.json --out convergence/derivatives/periodic-water-20260909 --tex paper/pccp/derivative-results.tex
-python3 -B paper/pccp/build_submission_assets.py
-cd paper/pccp
-latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
-latexmk -pdf -interaction=nonstopmode -halt-on-error supplementary_information.tex
-```
+The reproduction command writes JSON, CSV and four figure reconstructions
+outside the repository. The deposited publication figures remain the accepted
+assets. PDF metadata, fonts and insignificant fit digits can vary between
+library versions. Fit-only tolerances are 2e-7 angstrom for lattice constants
+and 1e-4 GPa for bulk moduli. They do not relax total-energy, file-hash or
+band-edge checks.
 
-Numerical-library versions may affect final fit digits and rendering metadata.
-The archived tables and figures are the manuscript snapshot.
+## Numerical Sources
 
-## Original Inputs
+- **Molecules:** `benchmarks/dietGMTKN55/dataset.json` fixes the 62 reactions,
+  stoichiometry, references and 420 selected native executions. The external
+  comparison is a small pinned extract, not a copy of the GauXC dataset.
+  Predecessors relevant to the selected molecular solutions are retained in
+  `provenance`, outside numerical statistics.
+- **Molecular crystals:** `results/lattice-energies.json` retains original and
+  selected crystal/molecule energies. `analyze_basis_controls.py` reconstructs
+  the QZVPP-ae selections and the basis/quadrature changes. Reference extracts
+  identify the DFT and correlated methods and their different protocols.
+- **Ice and basis controls:** `convergence/basis-sensitivity-20260915/index.json`
+  links 56 executions covering CO2/NH3, all thirteen ice phases and Si/C/MgO.
+  The four urea controls have their own X23 index. Relative ice energies cancel
+  the monomer reference; the absolute-energy monomer geometry is documented.
+- **LC10:** `protocol/paper-eos-selection.json` fixes materials, volumes and
+  representation reuse. `results/eos-selected-input-provenance.json` identifies
+  the 352 original outputs. The selected EOS and literature scripts reproduce
+  structural values and same-population reference errors.
+- **Band gaps:** `benchmarks/band-gaps/dataset.json` maps 50 primary gaps and
+  seven direct/one-centre comparisons to 61 distinct executions. The parser
+  reconstructs minimum and direct gaps from the sampled bands. Deep-core
+  censoring is accepted only at explicitly reviewed indices, never at a band
+  edge. Reference sensitivities remain separate from the baseline values.
+- **Numerical controls:** the audit recomputes the AE and GTH cutoff results,
+  quadrature and symmetry differences, and periodic-water finite differences.
+  Adjoint kernel sources and archived checks are in `convergence/adjoint`.
 
-* Molecular reactions: `production-p25/accepted-inputs/manifest.csv` maps all
-  332 selected species-routes to frozen and actually executed inputs.
-  `reaction-index.json` supplies stoichiometry and shared AE reuse.
-* LC10: `results/eos-selected-input-provenance.json` identifies all 352
-  selected executions; `protocol/paper-eos-selection.json` fixes the common
-  solid/volume selection.
-* Molecular crystals: each accepted record includes its original output,
-  frozen/actual input, timing and execution evidence. Controls name their
-  exact parent. The 1200 Ry check is crystal-only, not a paired lattice-energy
-  convergence test.
-  `results/lattice-energies.json` retains the original `complete_pairs` and
-  records the manuscript selection separately as `paper_pairs`. All three AE
-  entries use validated QZVPP crystal/molecule pairs. Twelve additional
-  inputs and outputs in `results/basis-controls` reproduce the matched tests.
-  `results/basis-convergence.json` retains the Urea quadrature/basis analysis.
-  `scripts/analyze_basis_controls.py` also derives the matched three-crystal
-  TZVPP/QZVPP error table from the accepted fine-grid pairs and deposited DMC
-  references. It reproduces the MAE change from 7.954 to 1.537 kJ/mol without
-  new electronic-structure calculations or a change in crystal selection.
-* The additional CO2/NH3, molecular-reaction, ice and solid controls are indexed in
-  `convergence/basis-sensitivity-20260915/index.json`. The independent
-  `scripts/basis_sensitivity.py` verifies completed-block markers, energy,
-  electron count, input/runtime hashes, and paired reaction stoichiometry.
-  It reproduces the new SI tables and `assessment.json`. The initial QZ
-  ethane outlier is retained alongside the lower-energy restart and finer-grid
-  atomic-start controls. None replaces entries in the 70-reaction statistics.
-  The ice average uses the same twelve phases at both basis levels and retains
-  the documented molecular-reference caveat. Relative-to-Ih energies cancel
-  that reference. Five-volume QZ curves for Si, diamond and MgO are matched to
-  the same original TZ volumes, preserving each point's k-mesh. Three TZ
-  runtime controls distinguish basis effects from a changed implementation.
-* Derivative and symmetry checks retain their exact inputs and outputs.
-  Their component-specific scope is defined in the ESI.
+## Publication Sources
 
-To rerun CP2K, map machine-specific paths to your installation while preserving
-the scientific settings and recorded source, basis, potential and model
-versions. External CP2K data and Skala models must be obtained from their
-cited distributions. Dataset provenance records their hashes. No WFN or
-compiled binaries are distributed. An identical WFN restart cannot be
-promised without those external files; final energies and analysis are
-independently checkable from the included outputs.
+`paper/pccp/main.tex` and `supplementary_information.tex` contain the entire
+texts, including tables. They share `references.bib` and `figures/`.
+`source-snapshot.json` identifies their Overleaf version and hashes.
+`data-coverage.json` maps all tables and figures to their numerical evidence.
+
+Compile in a separate copy with LaTeX, latexmk and the RSC bibliography style.
+The supplied `latexmkrc` refreshes both documents' cross-references. Build
+products are not part of the data manifest.
+
+## Electronic-Structure Reruns
+
+Original input paths must be mapped to an appropriate CP2K installation.
+Obtain bases, pseudopotentials and Skala model weights from their cited
+distributions and match the recorded hashes and scientific settings.
+No restart WFN or binary is distributed, so exact restart trajectories are
+not reproduced by the offline analysis. No new electronic-structure run is
+needed for any command above.

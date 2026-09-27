@@ -42,9 +42,6 @@ class BasisTests(unittest.TestCase):
         self.assertAlmostEqual(errors["qz_mae"], 1.5366186233, places=8)
         for row in errors["rows"]:
             self.assertAlmostEqual(row["qz_error"] - row["tz_error"], row["basis_shift"])
-        table = basis.table(report)
-        self.assertIn(r"\label{tab:crystal-basis-errors}", table)
-        self.assertIn("MAE & 7.954 & 1.537", table)
 
 if __name__=="__main__":
     unittest.main()

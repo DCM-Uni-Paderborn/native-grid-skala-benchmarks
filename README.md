@@ -1,49 +1,48 @@
 # Native-grid Skala: PCCP Supporting Data
 
-This repository contains only the results and reproducibility material used in
-**Native implementation of the machine-learned Skala exchange-correlation functional
-in CP2K: Unified one-centre reconstruction for molecular and condensed-phase
-calculations** and its electronic supplementary information (ESI). The TeX sources in
-[paper/pccp](paper/pccp) were checked against the
-[online PCCP project](https://www.overleaf.com/project/6aa123c081b754e6cf561ee5)
-on 17 September 2026.
+Inputs, outputs, reference extracts and offline analysis for **Native implementation
+of the machine-learned Skala exchange-correlation functional in CP2K: Unified
+one-centre reconstruction for molecular and condensed-phase calculations**.
 
-| Paper / ESI content | Supporting data |
+| Reported comparison | Data |
 | --- | --- |
-| 70 common dietGMTKN55 reactions; separate 65-reaction GauXC GPW-GTH and 70-reaction GauXC AE/ECP--PySCF comparisons | [Molecular data](benchmarks/dietGMTKN55/production-p25/paper-common-70), 332 unique native species-route executions and a pinned collaborator-data extract |
-| CO2, NH3 and urea, four representations | [Molecular crystals](benchmarks/X23-mini), 24 original base executions, seven numerical controls and twelve paired AE basis/grid controls, with all three selected AE pairs at QZVPP |
-| Six completed targeted molecular basis comparisons and ethane state/grid controls | [Paired molecular controls](benchmarks/dietGMTKN55/basis-controls), 33 executions, separate from the unchanged 70-reaction statistics |
-| Additional CARBHB12/11 and G21EA/25 QZ basis controls | [Additional molecular controls](convergence/molecular-qz-completion-20260917), five converged species and two nonconverged initialization records, whose energies are excluded |
-| Complete thirteen-phase ice basis comparison, relative energies to Ih and two symmetry checks | [Ice controls](benchmarks/DMC-ICE13), 30 executions including both molecular references and XIII at both basis levels |
-| Matched five-volume Si, diamond and MgO basis tests | [Solid basis controls](benchmarks/Goldzak12/basis-controls), 15 QZVPP points and three TZVPP runtime checks, separate from the uniform ten-solid comparison |
-| Ten-solid structural comparison, in the ESI | [LC10](benchmarks/Goldzak12), 352 unique energies, 36 independent EOS, 40 method-solid comparisons |
-| ACONF cutoff and water radial/angular quadrature | [Cutoff](convergence/cutoff/aconf8-b200) and [quadrature](convergence/atom-grid) |
-| Isolated-cell 22/24/25 angstrom padding | [Padding](diagnostics/molecular-padding-convergence) |
-| Force/stress finite differences | [45 periodic water cases](convergence/derivatives/periodic-water-20260909) |
-| Seven full/reduced k-point comparisons | [14 symmetry executions](convergence/symmetry) |
+| 62 dietGMTKN55 reactions, three native variants | [Molecular benchmark](benchmarks/dietGMTKN55), 420 selected executions for 140 species |
+| CO2, NH3 and urea, four representations | [Molecular crystals](benchmarks/X23-mini), including basis/grid controls and DFT, MP2 and multi-level CCSD(T) literature comparisons |
+| All thirteen DMC-ICE13 phases | [Ice](benchmarks/DMC-ICE13), TZVPP-ae and QZVPP-ae crystal/molecule energies and relative energies to Ih |
+| LC10 lattice constants and bulk moduli | [Solids](benchmarks/Goldzak12), 352 energies, 36 independent EOS curves and 40 representation/material entries |
+| 50 primary band gaps across 28 materials | [Band gaps](benchmarks/band-gaps), sampled edges, reference comparisons and seven direct/one-centre controls |
+| Cutoff, atom quadrature, adjoint, derivatives and symmetry | [Numerical controls](convergence) |
+| Isolated-cell padding | [Padding controls](diagnostics/molecular-padding-convergence) |
+| Current manuscript and ESI | [Compact sources](paper/pccp) |
 
-Shared species and AE curves are counted once. Unreported campaigns, recovery
-queues, unrelated failed diagnostics, atomic cohesive-energy calculations, unselected
-solids, old cell sizes and earlier paper drafts are excluded.
+The package contains the data used by the current paper and the evidence needed
+to reproduce its analyses. Superseded comparisons and unused publication assets
+remain available in Git history rather than the current tree. Original execution
+records are not rewritten to conceal failures or replace missing metadata.
 
-## Reproducibility
+## Reproduce
 
-See [REPRODUCIBILITY.md](REPRODUCIBILITY.md). Run
-`python3 -B scripts/audit_pccp_package.py` to verify file inventory, hashes,
-selected outputs, reaction/lattice energies and numerical checks, without
-running CP2K or contacting any cluster.
+See [REPRODUCIBILITY.md](REPRODUCIBILITY.md). The complete check requires Python
+and NumPy, but no CP2K executable, model weights, network connection or new SCF:
 
-[File manifest](paper/pccp/file-manifest.json) maps every included file to its
-paper/ESI scope and SHA-256 hash; it excludes itself to avoid a circular hash.
-[Execution provenance](paper/pccp/execution-provenance.json) records the
-original locations and hashes of the retrieved selected executions.
+```sh
+python3 -B scripts/audit_pccp_package.py
+python3 -B scripts/reproduce_paper.py --output /tmp/native-skala-analysis --figures
+```
 
-Exact inputs retain machine-specific paths as historical provenance. Model
-weights, binaries and restart wavefunctions are identified by hashes rather
-than redistributed. They are unnecessary for reproducing the reported
-analysis, but an identical restart trajectory requires the original WFN.
+Figure generation additionally requires Matplotlib. Output must be outside this
+immutable data tree. [Data coverage](paper/pccp/data-coverage.json) maps every
+manuscript/ESI table and figure to its sources. The [file manifest](paper/pccp/file-manifest.json)
+records hashes for all deposited files except itself.
 
-The earlier molecular GauXC paper is not duplicated or changed here. Its
-100-reaction aggregates are quoted in their original population; only the
-matched comparison used here is included. Numerical qualifications in the
-paper/ESI remain applicable; SCF convergence is not a universal accuracy bound.
+## External Molecular Comparison
+
+The earlier [molecular GauXC study](https://github.com/DCM-Uni-Paderborn/Molecular-Skala-in-CP2K)
+is not duplicated. Only its species-energy extract, geometry correspondence,
+source hashes and matched 62-reaction comparison are included here. Its raw
+inputs, outputs and full benchmark remain in that repository.
+
+Exact native inputs retain their original machine-specific paths and full basis
+identifiers. Model weights, executables and restart wavefunctions are identified
+by provenance records rather than redistributed. These external files are not
+needed to reanalyze the archived results.

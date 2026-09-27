@@ -1,41 +1,17 @@
-# PCCP Data Coverage
+# Publication Coverage
 
-The online main text and ESI were synchronized and checked on 14 September
-2026. The following selection is fixed by those documents, not by the former
-production queues. Original selected inputs and outputs have not been edited.
+[data-coverage.json](data-coverage.json) maps all **33 tables and four figures**
+in the current manuscript and ESI to deposited data and analysis. Labels,
+rather than printed numbers, make this map stable under renumbering.
 
-| Manuscript / ESI claim | Supporting dataset | Selected executions |
-| --- | --- | ---: |
-| Main molecular table; ESI complete reaction table and error distribution | dietGMTKN55 common-70 reaction index, references, energies and accepted-input manifest | 332 |
-| Main and ESI 65-reaction GAPW-XC/GTH versus GauXC GPW-GTH comparison; 70-reaction mixed AE/GTH versus GauXC AE/ECP and PySCF comparison | Selected collaborator species extract with input/output hashes and pinned source revision, comparison CSV/JSON, offline comparison script and three generated ESI tables | Reuses the molecular set, no new native executions |
-| Quoted 100-reaction GauXC/PySCF context | ESI context table and cited author-manuscript version | No additional native executions |
-| Main molecular-crystal table and figure; ESI total energies | X23-mini accepted base outputs and validation records | 24 |
-| ESI paired grid, cutoff, k-mesh, symmetry tolerance and CPU/GPU checks | X23-mini accepted controls with exact parents | 7 |
-| Main selected Urea AE energy; ESI matched basis/grid table | Four completed Urea AE crystal/molecule controls with exact inputs, outputs and runtime hashes | 4 |
-| ESI LC10 structural tables, literature comparisons, EOS plots, B-prime and compressibility | 352 selected outputs, exact inputs, EOS selection and offline fitting scripts | 352 |
-| ESI paired ACONF cutoff table | Nine cutoff values, two geometries, GPW and GAPW-XC | 36 |
-| ESI GPW water radial/angular table | Self-consistent water quadrature series | 16 |
-| ESI isolated-cell padding | Three species at 22, 24 and 25 angstrom | 9 |
-| ESI force/stress finite differences | Five representations, nine executions each | 45 |
-| ESI full/reduced k-point table | Seven tight-SCF pairs, including original inputs and outputs | 14 |
+The coverage comprises the 62-reaction molecular comparison; molecular
+crystals and their DFT/correlated reference context; thirteen ice phases;
+LC10 structural results and basis controls; 50 primary band gaps and seven
+direct/one-centre comparisons; and the cutoff, quadrature, derivative,
+adjoint, symmetry and cell-padding controls.
 
-Total: **839 selected executions**. Reference transcriptions, generated
-tables/figures, source TeX, analysis software and hash/provenance records are
-supporting dependencies, not additional benchmark campaigns.
-
-The file manifest is an exact allowlist: the audit rejects both missing files
-and extra files. It also reconstructs reaction and lattice energies from the
-selected final outputs. The molecular-interface audit additionally rebuilds
-the reaction-matched totals, reference errors and D3 sensitivity from the
-selected collaborator species values. Their raw source is referenced at an
-immutable repository revision rather than duplicated here. The three new
-interface tables are generated directly from these checked values. The
-original native production, EOS and numerical-control records are unchanged.
-The selected Urea AE pair uses QZVPP at 200/974 quadrature. Its original
-triple-zeta pair remains part of the reported basis comparison. The other
-crystal/method pairs are unchanged, and pending controls are excluded.
-
-Excluded material was preserved outside this repository before pruning.
-Removal from the current tree does not erase old Git history. No history
-rewrite, new SCF calculation, or modification of the earlier GauXC paper was
-performed for this reconciliation.
+The manuscript text, source references and figure assets are fixed by
+[source-snapshot.json](source-snapshot.json). The audit verifies all reference
+targets, citations and assets and rejects missing or extra table/figure
+mappings. It also reconstructs the numerical comparisons from the archived
+outputs. No raw molecular GauXC data are replicated.

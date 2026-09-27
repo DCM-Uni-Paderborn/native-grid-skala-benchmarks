@@ -66,13 +66,13 @@ def invariant(inp):
 
 def assess():
     index = json.loads((DATA / "index.json").read_text())
-    assert len(index["cases"]) == 89
+    assert len(index["cases"]) == 56
     runs = {}
     for case in index["cases"]:
         key = (case["kind"], case["system"], case["level"], case["phase"])
         assert key not in runs
         runs[key] = verified(case)
-    result = {"snapshot_utc": index["snapshot_utc"], "crystals": {}, "molecular_reactions": [], "ice": [], "ice_symmetry": []}
+    result = {"snapshot_utc": index["snapshot_utc"], "crystals": {}, "ice": [], "ice_symmetry": []}
     for system in ("CO2", "NH3"):
         pairs = {}
         for level in ("tzvpp", "qzvpp"):
@@ -82,29 +82,6 @@ def assess():
             assert invariant(runs[("crystal", system, "tzvpp", phase)][1]) == invariant(runs[("crystal", system, "qzvpp", phase)][1])
         pairs["basis_shift_kjmol"] = pairs["qzvpp"]["lattice_energy_kjmol"] - pairs["tzvpp"]["lattice_energy_kjmol"]
         result["crystals"][system] = pairs
-    reaction_index = json.loads((ROOT / "benchmarks/dietGMTKN55/production-p25/paper-common-70/reaction-index.json").read_text())
-    for expected in index["molecular_reactions"]:
-        reaction = next(r for r in reaction_index["reactions"] if (r["subset"], r["reaction_id"]) == (expected["subset"], expected["reaction_id"]))
-        values = {}
-        for level in ("tzvpp", "qzvpp"):
-            energy = 0.0
-            for species in reaction["species"]:
-                system = f"{reaction['subset']}-{reaction['reaction_id']}/{species['name']}"
-                run, inp, original = runs[("molecular", system, level, "molecule")]
-                assert species["digest"] == original["digest"]
-                assert invariant(inp) == invariant(runs[("molecular", system, "tzvpp", "molecule")][1])
-                energy += species["count"] * run["energy_hartree"]
-            values[level] = energy * HA_KCAL
-            assert abs(values[level] - expected["tz_kcal_mol" if level == "tzvpp" else "qz_kcal_mol"]) < 1e-7
-        result["molecular_reactions"].append(dict(expected, scientific_status="initial_higher_energy_solution" if reaction["subset"] == "BHROT27" else "paired_basis_control"))
-    restart = runs[("molecular-state", "ethane_ecl/cross-conformer-restart", "qzvpp", "molecule")][0]
-    staggered = runs[("molecular", "BHROT27-1/ethane_st", "qzvpp", "molecule")][0]
-    fine = {name: runs[("molecular-state", name + "/grid200-974", "qzvpp", "molecule")][0]
-            for name in ("ethane_ecl", "ethane_st")}
-    result["ethane_state_controls"] = {
-        "restart_barrier_kcal_mol": (restart["energy_hartree"] - staggered["energy_hartree"]) * HA_KCAL,
-        "fine_grid_atomic_barrier_kcal_mol": (fine["ethane_ecl"]["energy_hartree"] - fine["ethane_st"]["energy_hartree"]) * HA_KCAL,
-        "included_in_uniform_production_statistics": False}
     for system, (reference, uncertainty) in index["ice_reference"]["values"].items():
         row = {"phase": system, "dmc_kjmol": reference, "dmc_statistical_uncertainty_kjmol": uncertainty}
         for level in ("tzvpp", "qzvpp"):
@@ -180,7 +157,6 @@ def solid_assessment(runs):
             rows = [{"volume_A3": p["volume_A3"], "energy_Ha": p[level]} for p in points]
             fits[level] = fit(rows)
             assert fits[level]["bracketed"]
-            fits[level]["window_checks"] = {"omit_smallest": fit(rows[1:]), "omit_largest": fit(rows[:-1])}
         controls = [v for k, v in runs.items() if k[:3] == ("solid", solid, "tzvpp")]
         assert len(controls) == 1
         control, _, case = controls[0]
@@ -198,63 +174,15 @@ def solid_invariant(text):
     return re.sub(r"(?m)^(\s*MAX_SCF)\s+\d+", r"\1 MAXIMUM", text)
 
 
-def tables(report):
-    lines = [r"\begin{table}[htbp]", r"\centering\small",
-             r"\caption{Targeted paired molecular basis controls, in kcal~mol$^{-1}$. Both bases use the same geometry, Hamiltonian, quadrature, and dispersion. The starred QZVPP ethane barrier uses the initially obtained higher-energy SCF solution. A lower-energy restart control is discussed in the text. These selected reactions do not define a revised 70-reaction MAE.}",
-             r"\label{tab:molecular-basis-controls}", r"\begin{tabular}{lrrrrr}", r"\toprule",
-             r"Reaction & Reference & TZVPP & QZVPP & GauXC AE & PySCF\\", r"\midrule"]
-    for r in report["molecular_reactions"]:
-        label = f"{r['subset']}/{r['reaction_id']}"
-        star = r"$^{*}$" if r["scientific_status"] == "initial_higher_energy_solution" else ""
-        lines.append(f"{label} & {r['reference_kcal_mol']:.3f} & {r['tz_kcal_mol']:.3f} & {r['qz_kcal_mol']:.3f}{star} & {r['gauxc_ae_kcal_mol']:.3f} & {r['pyscf_kcal_mol']:.3f}" + r"\\")
-    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
-    ice = [r"\begin{table}[htbp]", r"\centering\small",
-           r"\caption{Complete matched DMC-ICE13 comparison. Electronic lattice energies and signed residuals are in kJ~mol$^{-1}$ per water molecule; $\delta=E_{\mathrm{latt}}-E_{\mathrm{DMC}}$. Parentheses give DMC statistical uncertainties. MAE, mean signed error (MSE), and root-mean-square error (RMSE) use all thirteen phases at each basis level.}",
-           r"\label{tab:ice-basis}", r"\begin{tabular}{lrrrrr}", r"\toprule",
-           r"Phase & TZVPP & QZVPP & DMC & $\delta_{\rm TZ}$ & $\delta_{\rm QZ}$\\", r"\midrule"]
-    for r in report["ice"]:
-        ice.append(f"{r['phase']} & {r['tzvpp']:.3f} & {r['qzvpp']:.3f} & {r['dmc_kjmol']:.2f}({round(r['dmc_statistical_uncertainty_kjmol']*100):d}) & {r['tzvpp']-r['dmc_kjmol']:.3f} & {r['qzvpp']-r['dmc_kjmol']:.3f}" + r"\\")
-    ice.append(r"\midrule")
-    for metric in ("mae", "mse", "rmse"):
-        stats = report["ice_error_statistics"]["absolute"]
-        ice.append(f"{metric.upper()} & -- & -- & -- & {stats['tzvpp'][metric+'_kjmol']:.3f} & {stats['qzvpp'][metric+'_kjmol']:.3f}" + r"\\")
-    ice += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
-    relative = [r"\begin{table}[htbp]", r"\centering\small",
-        r"\caption{Relative electronic energies with respect to ice Ih, in kJ~mol$^{-1}$ per water molecule. The MAE uses all twelve nontrivial differences, excluding the identically zero Ih row. DMC differences are calculated from the rounded absolute energies in Table I of Ref.~\citenum{DellaPia2022Ice}, so the XI value is 0.16 rather than its separately rounded 0.15. The gas-phase reference cancels exactly.}",
-        r"\label{tab:ice-relative}", r"\begin{tabular}{lrrrr}", r"\toprule",
-        r"Phase & TZVPP & QZVPP & DMC & QZVPP--DMC\\", r"\midrule"]
-    for r in report["ice_relative"]:
-        relative.append(f"{r['phase']} & {r['tzvpp']:.3f} & {r['qzvpp']:.3f} & {r['dmc_kjmol']:.2f} & {r['qzvpp']-r['dmc_kjmol']:.3f}" + r"\\")
-    relative += [r"\midrule", f"MAE & {report['ice_relative_mae']['tzvpp']:.3f} & {report['ice_relative_mae']['qzvpp']:.3f} & -- & --" + r"\\",
-                 r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
-    solid = [r"\begin{table}[htbp]", r"\centering\small",
-        r"\caption{Matched five-volume AE basis tests. Lattice constants are in \AA{} and bulk moduli in GPa. Both bases are fitted on the same five volumes. Experimental static-lattice references are from Ref.~\citenum{Goldzak2022Solids}. These three QZVPP controls do not replace the uniform ten-solid TZVPP comparison.}",
-        r"\label{tab:solid-basis}", r"\begin{tabular}{llrr}", r"\toprule", r"Solid & Basis/reference & $a_0$ & $B_0$\\", r"\midrule"]
-    with (ROOT / "benchmarks/Goldzak12/reference/goldzak2022.csv").open() as stream:
-        refs = {r["solid"]: (float(r["a_A"]), float(r["B0_GPa"]))
-                for r in csv.DictReader(stream) if r["method"] == "experiment"}
-    for r in report["solid_basis_controls"]:
-        for level in ("tzvpp", "qzvpp"):
-            f = r["fits"][level]
-            solid.append(f"{r['solid']} & {level.upper()} & {f['a0_angstrom']:.4f} & {f['B0_GPa']:.2f}" + r"\\")
-        a, b = refs[r["solid"]]
-        solid.append(f"{r['solid']} & Experiment & {a:.4f} & {b:.2f}" + r"\\")
-    solid += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
-    return {"molecular-basis-table-si.tex": "\n".join(lines), "ice-basis-table-si.tex": "\n".join(ice),
-            "ice-relative-table-si.tex": "\n".join(relative), "solid-basis-table-si.tex": "\n".join(solid)}
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--write", action="store_true")
+    parser.add_argument('--write', action='store_true', help='Update the derived assessment JSON')
     args = parser.parse_args()
     report = assess()
     if args.write:
-        (DATA / "assessment.json").write_text(json.dumps(report, indent=2) + "\n")
-        for name, content in tables(report).items():
-            (ROOT / "paper/pccp" / name).write_text(content)
+        (DATA / 'assessment.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -142,41 +142,9 @@ def matched_basis_errors(report):
             "qz_mae": statistics.mean(abs(r["qz_error"]) for r in rows)}
 
 
-def table(report):
-    lines = [
-        r"\begin{table}[htbp]", r"\centering", r"\small",
-        r"\caption{Paired AE basis and quadrature checks. Total energies are in hartree and lattice energies in kJ~mol$^{-1}$. Both phases use the same basis and grid. All twelve fine-grid executions satisfy the OT threshold $5\times10^{-7}$ and end normally. The QZVPP pairs supply all three AE entries in Table~\ref{tab:x23_total_si}.}",
-        r"\label{tab:urea-basis}",
-        r"\begin{tabular}{lllrrr}", r"\toprule",
-        r"System & Basis & Radial/Lebedev & $E_{\rm solid}$ & $E_{\rm molecule}$ & $E_{\rm latt}$\\", r"\midrule",
-    ]
-    for system, controls in additional_controls()["crystals"].items():
-        label = {"CO2": r"CO$_2$", "NH3": r"NH$_3$"}[system]
-        for level in ("tzvpp", "qzvpp"):
-            pair = controls[level]
-            a,b = pair["phases"]["solid"],pair["phases"]["molecule"]
-            lines.append(f"{label} & {level.upper()} & 200/974 & {a['energy_hartree']:.12f} & {b['energy_hartree']:.12f} & {pair['lattice_energy_kjmol']:.6f}" + r"\\")
-    lines.append(r"Urea & TZVPP & 150/770 & -450.589911695840 & -225.247483909549 & -124.637557\\")
-    for level,pair in report["pairs"].items():
-        a,b = pair["phases"]["solid"],pair["phases"]["molecule"]
-        lines.append(f"Urea & {level.split('-')[0].upper()} & 200/974 & {a['energy_hartree']:.12f} & {b['energy_hartree']:.12f} & {pair['lattice_energy_kjmol']:.6f}" + r"\\")
-    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
-    errors = matched_basis_errors(report)
-    lines += [r"\begin{table}[htbp]", r"\centering\small",
-              r"\caption{Signed lattice-energy errors and basis shifts for the matched 200/974 AE pairs in Table~\ref{tab:urea-basis}, in kJ~mol$^{-1}$. DMC references are from Ref.~\citenum{DellaPia2024X23}. Negative reference errors indicate stronger binding. The MAEs use the same three crystals and unrounded energies at both basis levels.}",
-              r"\label{tab:crystal-basis-errors}", r"\begin{tabular}{lrrr}", r"\toprule",
-              r"Crystal & TZVPP--DMC & QZVPP--DMC & QZVPP--TZVPP\\", r"\midrule"]
-    for row in errors["rows"]:
-        label = {"CO2": r"CO$_2$", "NH3": r"NH$_3$", "urea": "Urea"}[row["system"]]
-        lines.append(f"{label} & {row['tz_error']:+.3f} & {row['qz_error']:+.3f} & {row['basis_shift']:+.3f}" + r"\\")
-    lines += [r"\midrule", f"MAE & {errors['tz_mae']:.3f} & {errors['qz_mae']:.3f} & --" + r"\\",
-              r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
-    return "\n".join(lines)
-
 def main():
     result=assessment()
     (ROOT/"results/basis-convergence.json").write_text(json.dumps(result,indent=2)+"\n")
-    (ROOT/"paper/x23-basis-si.tex").write_text(table(result))
     print(json.dumps(result,indent=2))
 
 if __name__ == "__main__":

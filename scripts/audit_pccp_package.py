@@ -10,10 +10,11 @@ import re
 import statistics
 import sys
 
-from compare_molecular_interfaces import EXTERNAL, calculate
-from basis_sensitivity import assess as basis_assessment, tables as basis_tables
-from molecular_completion_controls import assess as completion_assessment, table as completion_table
-from si_eos_extension import assess as si_assessment, table as si_table
+from analyze_molecular import analyze as molecular
+from analyze_band_gaps import analyze as band_gaps
+from basis_sensitivity import assess as basis_assessment
+from data_checks import compare_nested, package_files
+from additional_checks import ae_cutoff, adjoint, wavefunction_comparison, paper_coverage
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'benchmarks/X23-mini/scripts'))
@@ -67,9 +68,7 @@ def output(path, expected=None):
 
 def inventory():
     manifest = read('paper/pccp/file-manifest.json')
-    files = {p.relative_to(ROOT).as_posix() for p in ROOT.rglob('*')
-             if p.is_file() and '.git' not in p.relative_to(ROOT).parts
-             and '__pycache__' not in p.parts and p.name != '.DS_Store'}
+    files = {p.relative_to(ROOT).as_posix() for p in package_files()}
     files.discard('paper/pccp/file-manifest.json')
     expected = set(manifest['files'])
     assert files == expected, {'missing': sorted(expected-files), 'extra': sorted(files-expected)}
@@ -77,66 +76,6 @@ def inventory():
         assert sha(path) == record['sha256'], path
     return len(files)
 
-
-def molecular():
-    root = Path('benchmarks/dietGMTKN55/production-p25')
-    data = root / 'paper-common-70'
-    species = {r['route']+'/'+r['digest']: r for r in rows(data/'species-results.csv')}
-    assert len(species) == 332
-    actual = rows(root/'accepted-inputs/manifest.csv')
-    assert len(actual) == 332
-    for r in actual:
-        key = r['route']+'/'+r['digest']
-        assert r['availability'] == 'exact'
-        assert sha(r['archived_input']) == r['actual_sha256'], key
-        assert sha(r['canonical_input']) == r['canonical_sha256'], key
-        output(root/'accepted-inputs'/key/'output.out', species[key]['total_energy_ha'])
-    reference = read(data/'reference.json')
-    index = read(data/'reaction-index.json')
-    assert sha(data/'reference.json') == index['reference_subset_sha256']
-    tabulated = {(r['subset'], int(r['reaction_id'])): r for r in rows(data/'native-protocol-comparison.csv')}
-    assert len(tabulated) == len(index['reactions']) == 70
-    for reaction in index['reactions']:
-        key = reaction['subset'], reaction['reaction_id']
-        row = tabulated[key]
-        close(reference[key[0]][str(key[1])]['Energy'], row['reference_kcal_mol'])
-        for protocol in ['gapwxc_gth','hybrid_ae_gth_direct','hybrid_ae_gth_one_center']:
-            energy = sum(s['count'] * float(species[s['accepted_results'][protocol]['result_key']]['total_energy_ha'])
-                         for s in reaction['species']) * HA_KCAL
-            close(energy, row[protocol+'_kcal_mol'], 2e-6)
-            close(energy-float(row['reference_kcal_mol']), row[protocol+'_error_kcal_mol'], 2e-6)
-    metrics = {}
-    for prefix in ['gapwxc_gth','hybrid_ae_gth_direct','hybrid_ae_gth_one_center']:
-        errors = [float(r[prefix+'_error_kcal_mol']) for r in tabulated.values()]
-        metrics[prefix] = {'MAE_kcal_mol':statistics.mean(map(abs,errors)),
-                           'median_absolute_error_kcal_mol':statistics.median(map(abs,errors))}
-    gauxc = [r for r in rows(data/'native-and-gauxc-paper-comparison.csv') if r['paper_gpw_gth_available']=='yes']
-    assert len(gauxc) == 65
-    difference = [float(r['gapwxc_gth_kcal_mol'])-float(r['paper_gpw_gth_with_current_d3_kcal_mol']) for r in gauxc]
-    close(statistics.mean(map(abs,difference)), .4624, .00005)
-    source = read(data/'gauxc-source-common-70.json')
-    comparison, summary = calculate(source)
-    assert summary == read(data/'molecular-interface-summary.json')
-    recorded = rows(data/'molecular-interface-comparison.csv')
-    assert len(recorded) == len(comparison) == 70
-    for calculated, archived in zip(comparison, recorded):
-        for key, value in calculated.items():
-            if isinstance(value, (float, int)):
-                close(value, archived[key])
-            else:
-                assert archived[key] == ('' if value is None else value)
-    for reaction in source['reactions']:
-        for spec in reaction['species']:
-            assert set(spec['methods']) == set(EXTERNAL)
-            assert spec['maximum_centered_coordinate_difference_angstrom'] < source['coordinate_match_tolerance_angstrom']
-            for method in spec['methods'].values():
-                if method['converged']:
-                    close(method['electronic_energy_ha']+method['dispersion_energy_ha'], method['total_energy_ha'])
-                for field in ['input_sha256','output_sha256']:
-                    assert re.fullmatch('[0-9a-f]{64}', method[field])
-    return {'reactions':70,'unique_species_routes':332,'GauXC_GPW_intersection':65,
-            'GauXC_AE_PySCF_intersection':70,'metrics':metrics,
-            'interface_pairs':summary['pairwise_differences']}
 
 
 def solid_eos():
@@ -155,6 +94,30 @@ def solid_eos():
         output(folder/'output.out', energies[r['key']]['energy_Ha'])
     fits = rows(root/'results/eos-selected-fits.csv')
     assert len(fits) == 40
+    sys.path.insert(0, str(ROOT / root / 'scripts'))
+    from fit_selected_eos import analyze
+    calculated, _ = analyze(data, selected)
+    indexed = {(r['method'], r['solid']): r for r in fits}
+    for fit in calculated:
+        reference = indexed[(fit['method'], fit['solid'])]
+        for key, tolerance in [('a0_A', 2e-7), ('B0_GPa', 1e-4),
+                               ('B0_prime', 1e-4), ('fit_rms_meV_atom', 1e-7)]:
+            close(fit[key], reference[key], tolerance)
+    from compare_selected_literature import analyze as literature
+    comparison = literature(fits)
+    for key, filename in [('statistics', 'eos-literature-matched-statistics.csv'),
+                          ('alternate_B0_statistics', 'eos-literature-alternate-reference-statistics.csv')]:
+        stored = rows(root / 'results' / filename)
+        keys = ('comparison_set', 'source', 'method', 'property')
+        indexed = {tuple(r[k] for k in keys): r for r in stored}
+        assert len(indexed) == len(comparison[key])
+        for row in comparison[key]:
+            reference = indexed[tuple(row[k] for k in keys)]
+            for field, value in row.items():
+                if isinstance(value, (float, int)):
+                    close(value, reference[field])
+                else:
+                    assert value == reference[field], (field, value, reference[field])
     return {'solids':selected['solids'],'unique_energies':352,'independent_EOS':36,'method_solid_comparisons':40}
 
 
@@ -242,27 +205,21 @@ def main():
     args=parser.parse_args()
     report={}
     if not args.data_only: report['hashed_files']=inventory()
-    report.update(molecular=molecular(),LC10=solid_eos(),molecular_crystals=crystals(),numerical_checks=numerical_controls())
-    for r in read('paper/pccp/execution-provenance.json'):
-        for name,digest in r['files'].items():
-            assert sha(Path(r['target'])/name)==digest, (r['target'],name)
-    report['paired_basis_controls'] = basis_assessment()
-    assert report['paired_basis_controls'] == read('convergence/basis-sensitivity-20260915/assessment.json')
-    for name,content in basis_tables(report['paired_basis_controls']).items():
-        assert (ROOT/'paper/pccp'/name).read_text().strip()==content.strip(), name
-    report['additional_molecular_basis_controls'] = completion_assessment()
-    assert report['additional_molecular_basis_controls'] == read('convergence/molecular-qz-completion-20260917/assessment.json')
-    assert (ROOT/'paper/pccp/molecular-additional-basis-table-si.tex').read_text() == completion_table(report['additional_molecular_basis_controls'])
-    report['si_ten_volume_control'] = si_assessment()
-    assert report['si_ten_volume_control'] == read('convergence/si-eos-extension-20260920/assessment.json')
-    assert (ROOT/'paper/pccp/si-eos-extension-table-si.tex').read_text() == si_table(report['si_ten_volume_control'])
-    assert sum(1 for p in ROOT.rglob('output.out') if '.git' not in p.parts)==940
-    snapshot=read('paper/pccp/overleaf-source-snapshot.json')
-    for name,digest in {**snapshot['files'],**snapshot['pdf_sha256']}.items():
-        assert sha(Path('paper/pccp')/name)==digest
-    for name,digest in read('paper/pccp/source-data-sha256.json').items():
-        assert sha(Path(name))==digest, name
-    print(json.dumps(report,indent=2))
+    mol = molecular()
+    gaps = band_gaps()
+    report.update(molecular={'reactions': len(mol['rows']), 'executions': mol['unique_native_executions']},
+                  band_gaps={k: v for k, v in gaps.items() if k in ('primary_gaps', 'materials', 'classification', 'fully_readable_band_outputs', 'reviewed_censored_core_outputs')},
+                  LC10=solid_eos(), molecular_crystals=crystals(), numerical_checks=numerical_controls())
+    for record in read('paper/pccp/execution-provenance.json'):
+        for name, digest in record['files'].items():
+            assert sha(Path(record['target'])/name) == digest, (record['target'], name)
+    compare_nested(basis_assessment(), read('convergence/basis-sensitivity-20260915/assessment.json'))
+    report['ae_cutoff_cases'] = len(ae_cutoff())
+    report['adjoint'] = adjoint()
+    report['correlated_crystal_methods'] = len(wavefunction_comparison())
+    report['paper_coverage'] = paper_coverage()
+    report['archived_outputs'] = sum(p.name == 'output.out' for p in package_files())
+    print(json.dumps(report, indent=2))
 
 
 if __name__=='__main__':

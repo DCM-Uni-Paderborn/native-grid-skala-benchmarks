@@ -1,140 +1,24 @@
-# Native-grid Skala: PCCP Manuscript
+# Current Manuscript and ESI
 
-Online working copy: https://www.overleaf.com/project/6aa123c081b754e6cf561ee5
+This is the compact active source from the
+[Overleaf project](https://www.overleaf.com/project/6aa123c081b754e6cf561ee5).
 
-This separate project was copied from the current native-grid manuscript before
-editing. The earlier molecular GauXC manuscript is not modified.
+- `main.tex`: complete manuscript, including its tables.
+- `supplementary_information.tex`: complete ESI, including its tables.
+- `references.bib`: shared cited literature.
+- `figures/`: four active figures and the table-of-contents graphic.
+- `latexmkrc`: reciprocal cross-reference build configuration.
+- `toc-text.txt`: table-of-contents text.
 
-## Article Data
+The older multi-file PCCP snapshot is preserved in Overleaf's `PCCP/`
+folder, not duplicated in this dataset. No compiled manuscript PDFs or
+obsolete source fragments are deposited.
 
-- Main text: native GPW/GAPW reconstruction, 70 common molecular reactions,
-  and the electronic lattice energies of CO2, NH3, and urea.
-- Theory: separate GPW, GAPW-AE, direct/one-centre ECP, and XC-specific
-  representations; classical accurate integration versus joint Skala field
-  reconstruction; periodic partitions and discrete adjoints. Implementation
-  details were checked against source revision
-  `37aedacbb33677307818301a47a09ae435712293` used by the derivative tests.
-  The current online GauXC Memo (Overleaf project
-  `6a4609286a3fce49c980bf95`) was also consulted on 2026-09-09, without
-  modifying it. Density representation, quadrature layout, and core treatment
-  are kept distinct; cross-term counts and input-selection details were
-  independently checked rather than copied verbatim.
-- Supporting information: numerical controls, cross-code comparisons,
-  ten-solid EOS and literature comparisons, pressure derivatives, and
-  compressibilities.
-- Existing benchmark energies are reused. Additional finite-difference checks
-  are distinct from the production benchmarks.
+[source-snapshot.json](source-snapshot.json) fixes the publication version.
+[data-coverage.json](data-coverage.json) maps every table and figure to data.
+[file-manifest.json](file-manifest.json) hashes the entire repository
+(excluding itself). Execution details remain with each scientific dataset;
+the retained [execution index](execution-provenance.json) covers the earlier
+crystal, ice, EOS and numerical-control records.
 
-The reaction-resolved molecular comparison added on 11 September 2026 uses
-Stefano Battaglia's deposited species energies. Native GAPW-XC/GTH is compared
-with GauXC GPW-GTH on 65 reactions, separately from mixed native AE/GTH versus
-GauXC AE/def2-ECP and PySCF on 70. PySCF is the sole PySCF reference in
-this package, with the atomic-radius adjustment in Becke partitioning disabled.
-The ESI includes every selected reaction,
-reference errors, direct differences and a dispersion-sensitivity check.
-No previous production energies or selections were changed. The older GauXC
-paper and its repository were not edited for this comparison.
-
-The EOS analysis uses 352 unique energies and 36 independent curves, yielding
-40 method/material entries after explicitly identified AE reuse. No EOS is
-inferred from the three molecular-crystal single-point pairs.
-
-The current revision uses QZVPP/200-974 for all three selected AE
-crystal/molecule pairs. The CO2, NH3 and urea lattice energies are -32.066940,
--38.184551 and -110.427467 kJ/mol. Twelve matched controls document their
-basis sensitivity. Original triple-zeta values remain archived, and the
-GTH results and uniform ten-solid EOS data are unchanged. The SI additionally
-reports six completed targeted molecular basis pairs, the initial high-energy
-QZ ethane solution and its lower-state restart, and a complete thirteen-phase ice
-comparison including relative energies to Ih. Five-volume Si, diamond and MgO
-QZ controls document material-dependent structural basis effects. These
-controls do not replace the fixed 70-reaction or ten-solid statistics and do
-not establish complete-basis limits. Two further molecular QZ reaction controls,
-CARBHB12/11 and G21EA/25, are reported separately in the SI. Their five final
-species and the two required SCF initialization records are preserved in
-`convergence/molecular-qz-completion-20260917`. The latter are not benchmark
-energies. Unreported active runs and unrelated operational diagnostics are excluded.
-
-Five additional Si QZVPP energies complete its matched ten-volume EOS, while
-the five earlier QZVPP points are reused. The separate sampling analysis and
-execution index are in `convergence/si-eos-extension-20260920`; SI Table S20
-reports full and endpoint-omission fits. The additional sampling confirms
-the increased Si contraction and stiffness without removing fit-window
-sensitivity of the bulk modulus. Diamond and MgO remain five-volume controls.
-The published uniform ten-solid statistics and all original execution records
-are unchanged. The fit snapshot uses Python 3.12.14 and NumPy 2.3.5; other
-NumPy/LAPACK environments can differ in insignificant last fit digits.
-
-## Rebuilding
-
-From this directory, run:
-
-```bash
-python3 -B ../../scripts/compare_molecular_interfaces.py --write
-python3 -B ../../scripts/molecular_completion_controls.py --write
-python3 -B ../../scripts/si_eos_extension.py --write
-python3 build_submission_assets.py
-python3 analyse_derivative_checks.py \
-  --report ../../convergence/derivatives/periodic-water-20260909/validated-results.json \
-  --out ../../convergence/derivatives/periodic-water-20260909 \
-  --tex derivative-results.tex
-latexmk -pdf main.tex supplementary_information.tex
-```
-
-Asset generation requires NumPy, Matplotlib, and the existing Goldzak12 fitting
-dependencies. It reads the curated repository datasets and does not launch CP2K.
-`source-data-sha256.json` identifies numerical inputs to the table generator.
-The handwritten analysis includes remain separate from generated tables.
-
-The shared `latexmkrc` first refreshes the independent ESI in `esi-build/`.
-The main text imports its labels with an `esi-` prefix, so section and table
-numbers remain synchronized when the ESI changes. PDF links target
-`supplementary_information.pdf`. Compile in a separate staging copy to keep
-temporary build products out of the curated repository inventory.
-
-Abbreviations are defined independently in the abstract, main text, and ESI.
-Table and figure captions use definitions introduced in the preceding prose.
-Established names such as PBE, D3, BJ, CP2K, and GauXC are not expanded.
-
-The script `run_derivative_checks.py` is the separately authorized derivative
-test driver. Its runtime paths identify the preserved Terok production stack;
-they must be adapted, with matching source/model/data provenance, for a new host.
-It must not be confused with the manuscript/table build.
-
-The 45 periodic-water derivative executions are complete. The curated dataset
-is in `convergence/derivatives/periodic-water-20260909` at the repository root.
-The maximum absolute errors over both steps and all five representations are
-2.856e-6 Ha/bohr for the tested force component and 0.4722 MPa for the tested
-diagonal stress component. These are component-specific consistency checks,
-not full phonon, elasticity, or finite-k-point derivative validation.
-
-## Submission Review
-
-The PCCP text was checked against the original article brief on 2026-09-09.
-The main narrative retains the full GPW/GAPW theory and joint one-centre
-reconstruction, followed by the molecular comparison and CO2/NH3/urea binding.
-Quantitative cutoff and other numerical-control details are in the ESI.
-The ten-solid analysis remains supporting evidence rather than a second
-main-text benchmark. Molecular accuracy and condensed-phase transfer are
-distinguished from basis/core differences and numerical validation.
-The CC4S outlook includes periodic coupled-cluster machine-learning work;
-the QMC discussion explicitly includes periodic FCIQMC and the TurboRVB
-kagome application with Azadi.
-
-No production energy, benchmark selection, or model was changed in this
-editorial revision, and no additional electronic-structure calculation was
-launched. The ESI describes the LiF/LiH exclusions concisely through the
-availability of consistent EOS data across all representations. Detailed
-diagnostics remain in the underlying records; no exclusively SCF-based
-explanation is substituted.
-
-The affiliations and funding are adapted from
-the current GauXC manuscript. The PCCP author list was subsequently revised
-as requested, with unused affiliations removed and the remaining ones renumbered.
-The equal-contribution statement and its author markers were removed as requested.
-No conflict-of-interest
-statement was present in its main text or SI; author confirmation is required
-before submission. The manuscript marks that issue explicitly.
-
-The public, versioned dataset release must be completed before submission. No
-journal submission, git commit, or remote push is performed by these build steps.
+See [reproduction instructions](../../REPRODUCIBILITY.md).
