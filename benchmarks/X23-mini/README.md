@@ -15,8 +15,14 @@ Inputs and outputs preserve the exact geometry and computational settings.
 the selected results. The 1200 Ry numerical control changes the crystal only;
 it is not a crystal/molecule lattice-energy cutoff series.
 
-`reference/dft-comparison.json` contains the reported DFT literature values.
-`reference/wavefunction-comparison.json` contains MP2/CBS, SCS(MI)-MP2/CBS
-and the multi-level LNO-CCSD(T)/RPA+ph/HF comparison, with source locations,
+`reference/dft-comparison.json` contains the PBE+D3, SCAN+rVV10 and PBE0+MBD
+values in manuscript Table 3. `reference/wavefunction-comparison.json`
+contains MP2/CBS and the multi-level LNO-CCSD(T)/RPA+ph/HF comparison, with source locations,
 energy definitions and geometry protocols. None is a native rerun of those
 methods. The common DMC values are unchanged.
+
+The publication audit checks every energy, MAE and DMC uncertainty in Table 3
+against these data and requires exactly the same method population and order.
+`scripts/reproduce_paper.py` exports its nine method rows to
+`crystal-comparison.csv` in the chosen output directory. Literature methods
+removed from the manuscript are not included in the current comparison.

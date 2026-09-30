@@ -51,12 +51,61 @@ def crystal_dft():
             for name, energies in data['methods'].items()]
 
 
+def crystal_comparison():
+    data = json.loads((ROOT / 'benchmarks/X23-mini/results/lattice-energies.json').read_text())
+    reference = json.loads((ROOT / 'benchmarks/X23-mini/reference/wavefunction-comparison.json').read_text())
+    population = reference['population']
+    dmc = reference['reference']['lattice_energies']
+    pairs = {(r['method'], r['system']): r for r in data['paper_pairs']}
+    rows = []
+    for method, label in [('gapw-ae', 'GAPW-AE'),
+                          ('gapw-gth-one-center', 'GAPW-GTH one-centre'),
+                          ('gapw-gth-direct', 'GAPW-GTH direct'),
+                          ('gapwxc-gth', 'GAPW-XC/GTH')]:
+        energies = [pairs[method, system]['lattice_energy_kjmol'] for system in population]
+        for system, value in zip(population, dmc):
+            close(pairs[method, system]['dmc_kjmol'], value)
+        rows.append({'method': label, 'energies_kJ_mol': energies,
+                     'statistics': metrics([v-r for v, r in zip(energies, dmc)])})
+    rows.extend(crystal_dft())
+    rows.extend(wavefunction_comparison())
+    return rows
+
+
+def check_crystal_table(text, rows):
+    # Read the simple numeric tabular following this stable publication label.
+    table = text.split(r'\label{tab:crystals}', 1)[1].split(r'\end{tabular}', 1)[0]
+    cells = []
+    for line in table.splitlines():
+        if '&' not in line or line.strip().startswith('Method &'):
+            continue
+        values = [cell.strip().removesuffix(r'\\').strip() for cell in line.split('&')]
+        values[0] = re.sub(r'\\cite\w*\{[^}]+\}', '', values[0])
+        cells.append(values)
+    expected_names = [r['method'] for r in rows] + ['DMC reference']
+    if [r[0] for r in cells] != expected_names:
+        raise ValueError('Crystal table and deposited method populations differ')
+    for printed, row in zip(cells[:-1], rows):
+        values = row['energies_kJ_mol'] + [row['statistics']['MAE']]
+        if len(printed) != len(values) + 1:
+            raise ValueError('Unexpected crystal table columns')
+        for cell, value in zip(printed[1:], values):
+            decimals = len(cell.split('.')[1])
+            close(float(cell), value, 0.5 * 10**(-decimals))
+    reference = json.loads((ROOT / 'benchmarks/X23-mini/reference/wavefunction-comparison.json').read_text())['reference']
+    expected_dmc = [f'{energy:.1f}({round(uncertainty * 10)})' for energy, uncertainty in
+                    zip(reference['lattice_energies'], reference['statistical_uncertainties'])]
+    if cells[-1][1:] != expected_dmc + ['--']:
+        raise ValueError('Crystal table and deposited DMC references differ')
+
+
 def paper_coverage():
     folder = ROOT / 'paper/pccp'
     snapshot = json.loads((folder / 'source-snapshot.json').read_text())
     for name, digest in snapshot['files'].items():
         assert sha(folder / name) == digest, name
     texts = {name: (folder / name).read_text() for name in ('main.tex', 'supplementary_information.tex')}
+    check_crystal_table(texts['main.tex'], crystal_comparison())
     assert len(list(folder.glob('*.tex'))) == 2
     labels = {name: re.findall(r'\\label\{([^}]+)\}', text) for name, text in texts.items()}
     coverage = json.loads((folder / 'data-coverage.json').read_text())

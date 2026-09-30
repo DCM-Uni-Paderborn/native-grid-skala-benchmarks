@@ -1,9 +1,13 @@
 # Resolve reciprocal references on a clean checkout as well as on Overleaf,
 # where the outer compilation uses the job name "output". -norc avoids recursion.
-for my $target ('main', 'supplementary_information', 'main') {
-    my @outdir = $target eq 'supplementary_information' ? ('-outdir=esi-build') : ();
-    my $status = system('latexmk', '-norc', '-pdf', '-quiet',
-                        '-interaction=nonstopmode', '-halt-on-error',
-                        @outdir, "$target.tex");
-    die "$target compilation failed; cross-references were not refreshed\n" if $status;
+# The combined arXiv source has internal references and needs no helper builds.
+my $combined_arxiv = grep { m{(?:^|/)arxiv(?:\.tex)?$} } @ARGV;
+unless ($combined_arxiv) {
+    for my $target ('main', 'supplementary_information', 'main') {
+        my @outdir = $target eq 'supplementary_information' ? ('-outdir=esi-build') : ();
+        my $status = system('latexmk', '-norc', '-pdf', '-quiet',
+                            '-interaction=nonstopmode', '-halt-on-error',
+                            @outdir, "$target.tex");
+        die "$target compilation failed; cross-references were not refreshed\n" if $status;
+    }
 }

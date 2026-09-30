@@ -6,7 +6,8 @@ import unittest
 
 from data_checks import ROOT, close, compare_nested, metrics, sha, verify_files
 from analyze_band_gaps import band_edges, gap_type, statistics
-from additional_checks import ae_cutoff, adjoint, crystal_dft, paper_coverage
+from additional_checks import (ae_cutoff, adjoint, crystal_dft, crystal_comparison,
+                               check_crystal_table, paper_coverage)
 
 SAMPLE = '''# Point 1 Spin 1: 0 0 0
 1 -10 2
@@ -52,7 +53,19 @@ class BandParsingTests(unittest.TestCase):
 
 class PublicationTests(unittest.TestCase):
     def test_current_float_coverage(self):
-        self.assertEqual(paper_coverage(), {'tables': 33, 'figures': 4, 'citations': 60})
+        self.assertEqual(paper_coverage(), {'tables': 32, 'figures': 4, 'citations': 60})
+
+    def test_crystal_table_matches_archived_values_and_scope(self):
+        text = (ROOT / 'paper/pccp/main.tex').read_text()
+        rows = crystal_comparison()
+        self.assertEqual(len(rows), 9)
+        check_crystal_table(text, rows)
+        for before, after in [('-32.067', '-32.167'), ('& 5.03', '& 4.03'),
+                              ('-29.4(2)', '-29.4(3)'), ('PBE0+MBD', 'PBE+MBD')]:
+            with self.subTest(before=before), self.assertRaises(ValueError):
+                check_crystal_table(text.replace(before, after), rows)
+        with self.assertRaises(ValueError):
+            check_crystal_table(text, rows + [rows[-1]])
 
     def test_case_insensitive_paths_remain_unique(self):
         data = json.loads((ROOT / 'benchmarks/band-gaps/dataset.json').read_text())

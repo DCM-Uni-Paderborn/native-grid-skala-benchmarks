@@ -6,6 +6,7 @@
 \usepackage{graphicx,booktabs,array,amsmath,microtype}
 \usepackage[super,sort&compress]{natbib}
 \usepackage{xcolor}
+\usepackage[normalem]{ulem}
 \usepackage{xurl,xr-hyper}
 \usepackage[colorlinks=true,allcolors=teal]{hyperref}
 
@@ -371,6 +372,8 @@ For lattice energies, numerical integration errors in the crystal and gas-phase 
 For the molecular crystals, the tested atom-centred quadrature refinement changes the lattice energy more than the tested k-point and symmetry-tolerance adjustments. CPU/CUDA lattice-energy differences are below 0.001~kJ~mol$^{-1}$ for CO$_2$ with GAPW-XC/GTH and urea with GAPW-AE. These controls and the crystal-only cutoff test are listed in ESI Table~\ref{esi-tab:x23_controls_si}. These fixed-input comparisons test device consistency. Full/reduced-mesh checks assess symmetry reduction at fixed k-point sampling (ESI Sec.~\ref{esi-sec:symmetry-meshes}), while self-consistent FD tests assess forces and stress (ESI Sec.~\ref{esi-sec:fd}).
 
 
+OpenAI ChatGPT/Codex (GPT-5.6 Sol) assisted with the development of data-analysis and plotting scripts and with consistency checks during preparation of this work.
+
 \section{Results and Discussion}
 \label{sec:results}
 
@@ -429,15 +432,24 @@ where $E_{\rm crystal}$ is the total energy of the unit cell and $E_{\rm molecul
 
 \begin{table*}[t]
 \centering
-\caption{Electronic lattice energies in kJ~mol$^{-1}$ per molecule at the supplied geometries, including D3(BJ) for all Skala results. All AE entries use the QZVPP-ae basis, while GTH entries retain their molecularly optimized triple-zeta bases. The AE triple-zeta calculations using the same geometries and integration grids are reported in the ESI. DMC reference values are from Ref.~\citenum{DellaPia2024X23}. Parentheses give its statistical uncertainties, not a complete systematic uncertainty. Negative energies denote binding.}
+\caption{Electronic lattice energies and MAEs against DMC for the same three crystals, in kJ~mol$^{-1}$ per molecule. The first four methods use native Skala--D3(BJ) with QZVPP-ae or TZV2P-GTH bases. Negative energies denote binding. Parentheses give DMC statistical uncertainties. The literature methods use different geometries and numerical protocols, detailed in ESI Sec.~\ref{esi-sec:crystal-literature}. Multi-level CCSD(T) denotes the composite LNO-CCSD(T)/RPA+ph/HF method.}
 \label{tab:crystals}
-\begin{tabular}{lrrrrr}
+\begin{tabular}{lrrrr}
 \toprule
-Crystal & GAPW-AE & GAPW-GTH one-centre & GAPW-GTH direct & GAPW-XC/GTH & DMC\\
+Method & CO$_2$ & NH$_3$ & Urea & MAE\\
 \midrule
-CO$_2$ & -32.067 & -37.392 & -37.376 & -37.408 & -29.4(2)\\
-NH$_3$ & -38.185 & -40.076 & -40.094 & -40.074 & -38.2(1)\\
-Urea & -110.427 & -113.719 & -113.805 & -113.725 & -108.5(3)\\
+GAPW-AE & -32.067 & -38.185 & -110.427 & 1.54\\
+GAPW-GTH one-centre & -37.392 & -40.076 & -113.719 & 5.03\\
+GAPW-GTH direct & -37.376 & -40.094 & -113.805 & 5.06\\
+GAPW-XC/GTH & -37.408 & -40.074 & -113.725 & 5.04\\
+\midrule
+PBE+D3\cite{DellaPia2025MLIP} & -25.07 & -43.76 & -109.90 & 3.76\\
+SCAN+rVV10\cite{DellaPia2025MLIP} & -31.47 & -41.69 & -113.55 & 3.54\\
+PBE0+MBD\cite{DellaPia2025MLIP} & -23.74 & -38.99 & -109.40 & 2.45\\
+MP2/CBS\cite{Liang2023CrystalMP2} & -27.81 & -38.34 & -108.66 & 0.63\\
+Multi-level CCSD(T)\cite{Syty2025CrystalCC} & -29.4 & -37.6 & -111.0 & 1.03\\
+\midrule
+DMC reference\cite{DellaPia2024X23} & -29.4(2) & -38.2(1) & -108.5(3) & --\\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -458,7 +470,7 @@ The tested integration-grid and CPU/GPU effects are too small to explain the rem
 We compare Skala--D3(BJ) electronic lattice energies with DMC references, avoiding the zero-point and thermal corrections required when using experimental sublimation enthalpies.\cite{DellaPia2024X23,Dolgonos2019X23b}
 
 
-Published dispersion-inclusive DFT results provide a broader comparison.\cite{DellaPia2025MLIP} On this three-crystal set, native GAPW-AE has a lower MAE than the listed dispersion-inclusive DFT methods, while GAPW-XC/GTH is competitive for ammonia and urea. Periodic MP2/CBS, SCS(MI)-MP2/CBS, and the multi-level LNO-CCSD(T)/RPA+ph approach with a periodic Hartree--Fock correction provide complementary wavefunction comparisons.\cite{Liang2023CrystalMP2,Syty2025CrystalCC} MP2/CBS and the multi-level approach give smaller MAEs than native AE, but the differences are on the scale of the estimated overall DMC uncertainty.\cite{DellaPia2024X23} ESI Sec.~\ref{esi-sec:crystal-literature} and Table~\ref{esi-tab:x23-dft-context} collect the individual energies and statistics and document the differing geometries and numerical protocols.
+Table~\ref{tab:crystals} places the native results alongside selected dispersion-inclusive DFT and correlated wavefunction calculations. Native GAPW-AE has a lower MAE than the listed DFT methods, while GAPW-XC/GTH is competitive for ammonia and urea. MP2/CBS and the multi-level LNO-CCSD(T)/RPA+ph/HF approach give smaller MAEs than native AE, but the differences are on the scale of the estimated overall DMC uncertainty.\cite{DellaPia2024X23} The literature geometries and numerical protocols are documented in ESI Sec.~\ref{esi-sec:crystal-literature}.
 
 \subsection{Ice polymorphs and condensed-phase transferability}
 \label{sec:transfer-results}
@@ -594,10 +606,12 @@ There are no conflicts to declare.
 
 \section*{Data availability}
 \label{sec:data-availability}
-The supporting reaction energies, lattice-energy comparisons, equation-of-state data, band-gap tables, and numerical controls are included in the ESI. Absolute crystal and molecular energies, geometries, computational inputs, analysis scripts, and source-version metadata for the molecular, molecular-crystal, ice, and solid benchmarks are collected in the native-grid Skala benchmark repository at \url{https://github.com/DCM-Uni-Paderborn/native-grid-skala-benchmarks}. The separate band-gap dataset accompanies the manuscript source and is not included in that public archive. A versioned public release of the complete article dataset will accompany submission.
+The supporting reaction energies, lattice-energy comparisons, equation-of-state data, band-gap tables, and numerical controls are included in the ESI. The underlying energies, geometries, computational inputs and outputs, reference data, analysis scripts, and source-version metadata for all benchmarks and numerical controls are publicly available at \url{https://github.com/DCM-Uni-Paderborn/native-grid-skala-benchmarks}. For the comparison with earlier molecular implementations, this repository contains the matched reference extract and links to the original molecular Skala repository rather than duplicating its full dataset.
 
 \section*{Acknowledgements}
-The authors thank the AI for Science team at Microsoft Research for valuable discussions and the CP2K and GauXC development communities. Part of the research was funded by the German Research Foundation (DFG), project numbers 417590517/Collaborative Research Centre 1415 and 519869949. OpenAI tools assisted with language editing, literature organization, and document preparation. Responsibility for the scientific content remains with the authors.
+The authors thank the AI for Science team at Microsoft Research for valuable discussions and the CP2K and GauXC development communities. Part of the research was funded by the German Research Foundation (DFG), project numbers 417590517/Collaborative Research Centre 1415 and 519869949.
+
+During the preparation of this work, the authors used OpenAI ChatGPT/Codex (GPT-5.6 Sol) to support language editing, literature organization, mathematical exposition, the development of data-analysis and plotting scripts, consistency checks, and LaTeX preparation. The authors reviewed and edited the resulting content and take full responsibility for the content of the published article.
 
 \bibliographystyle{rsc}
 \bibliography{references}

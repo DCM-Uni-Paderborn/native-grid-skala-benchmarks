@@ -10,7 +10,7 @@ from data_checks import ROOT
 from analyze_molecular import analyze as molecular
 from analyze_band_gaps import analyze as band_gaps
 from basis_sensitivity import assess
-from additional_checks import ae_cutoff, wavefunction_comparison, crystal_dft
+from additional_checks import ae_cutoff, wavefunction_comparison, crystal_dft, crystal_comparison
 from paper_figures import ice_data, ice_figure, molecular_figure, eos_figure, reconstruction_figure
 
 sys.path.insert(0, str(ROOT / 'benchmarks/Goldzak12/scripts'))
@@ -59,6 +59,9 @@ def main():
     write_csv(destination / 'molecular.csv', [{'reaction': r['reaction'], 'reference_kcal_mol': r['reference_kcal_mol'],
                                              **r['energies_kcal_mol']} for r in mol['rows']])
     write_csv(destination / 'LC10_fits.csv', fits)
+    write_csv(destination / 'crystal-comparison.csv', [
+        {'method': row['method'], **dict(zip(('CO2', 'NH3', 'urea'), row['energies_kJ_mol'])),
+         'MAE_kJ_mol': row['statistics']['MAE']} for row in crystal_comparison()])
     ice, ice_statistics = ice_data({'rows': basis['ice']})
     write_csv(destination / 'ice13.csv', ice)
     (destination / 'ice13-statistics.json').write_text(json.dumps(ice_statistics, indent=2)+'\n')
